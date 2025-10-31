@@ -122,19 +122,12 @@ const WeekendSchedule = () => {
 
   const allocationMutation = useMutation({
     mutationFn: async (values: z.infer<typeof manualAllocationSchema>) => {
-      const { data, error } = await supabase
-        .from("escala_manual")
-        .insert(values as any)
-        .select("*, operadores(*)")
-        .single();
+      const { error } = await supabase.from("escala_manual").insert(values as any);
       if (error) throw error;
-      return data as ManualScheduleEntry;
     },
-    onSuccess: (newAllocation) => {
+    onSuccess: () => {
       toast.success("Alocação salva com sucesso!");
-      queryClient.setQueryData<ManualScheduleEntry[]>(queryKey, (oldData) => {
-        return oldData ? [...oldData, newAllocation] : [newAllocation];
-      });
+      queryClient.invalidateQueries({ queryKey: queryKey });
       form.reset({ data: format(saturday, "yyyy-MM-dd") });
     },
     onError: (error) => toast.error("Erro ao salvar", { description: error.message }),
@@ -142,15 +135,12 @@ const WeekendSchedule = () => {
 
   const deleteAllocationMutation = useMutation({
     mutationFn: async (id: string) => {
-        const { error } = await supabase.from("escala_manual").delete().eq("id", id);
-        if (error) throw error;
-        return id;
+      const { error } = await supabase.from("escala_manual").delete().eq("id", id);
+      if (error) throw error;
     },
-    onSuccess: (deletedId) => {
-        toast.success("Alocação removida com sucesso!");
-        queryClient.setQueryData<ManualScheduleEntry[]>(queryKey, (oldData) => {
-            return oldData ? oldData.filter(item => item.id !== deletedId) : [];
-        });
+    onSuccess: () => {
+      toast.success("Alocação removida com sucesso!");
+      queryClient.invalidateQueries({ queryKey: queryKey });
     },
     onError: (error) => toast.error("Erro ao remover", { description: error.message }),
   });
