@@ -123,19 +123,25 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
     const periodStartMins = timeToMinutes(values.horário_inicio);
     const periodEndMins = timeToMinutes(values.horário_fim);
 
-    if (periodEndMins <= periodStartMins) {
-        toast.error("Horário inválido", { description: "O horário de início deve ser anterior ao de fim." });
+    if (periodStartMins === periodEndMins) {
+        toast.error("Horário inválido", { description: "O horário de início não pode ser igual ao de fim." });
         return;
     }
 
-    const isNightShift = mainStartMins > mainEndMins;
-    let isWithinBounds = false;
+    const isMainNightShift = mainStartMins > mainEndMins;
+    const isPeriodNightShift = periodStartMins > periodEndMins;
 
-    if (isNightShift) {
-        const isPeriodInGap = periodStartMins >= mainEndMins && periodEndMins <= mainStartMins;
-        isWithinBounds = !isPeriodInGap;
+    let isWithinBounds = false;
+    if (isMainNightShift) {
+        if (isPeriodNightShift) {
+            isWithinBounds = periodStartMins >= mainStartMins && periodEndMins <= mainEndMins;
+        } else {
+            const isAfterStart = periodStartMins >= mainStartMins && periodEndMins <= 1440;
+            const isBeforeEnd = periodStartMins >= 0 && periodEndMins <= mainEndMins;
+            isWithinBounds = isAfterStart || isBeforeEnd;
+        }
     } else {
-        isWithinBounds = periodStartMins >= mainStartMins && periodEndMins <= mainEndMins;
+        isWithinBounds = !isPeriodNightShift && periodStartMins >= mainStartMins && periodEndMins <= mainEndMins;
     }
 
     if (!isWithinBounds) {
@@ -143,12 +149,32 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
         return;
     }
 
+    const getIntervals = (start: number, end: number): [number, number][] => {
+        if (start < end) return [[start, end]];
+        return [[start, 1440], [0, end]];
+    };
+
+    const intervalsOverlap = (i1: [number, number], i2: [number, number]): boolean => {
+        return i1[0] < i2[1] && i1[1] > i2[0];
+    };
+
+    const newPeriodIntervals = getIntervals(periodStartMins, periodEndMins);
+
     const isOverlapping = periods
       .filter(p => p.id !== editingPeriod?.id)
       .some(p => {
         const existingStartMins = timeToMinutes(p.horário_inicio);
         const existingEndMins = timeToMinutes(p.horário_fim);
-        return periodStartMins < existingEndMins && periodEndMins > existingStartMins;
+        const existingIntervals = getIntervals(existingStartMins, existingEndMins);
+
+        for (const newInterval of newPeriodIntervals) {
+            for (const existingInterval of existingIntervals) {
+                if (intervalsOverlap(newInterval, existingInterval)) {
+                    return true;
+                }
+            }
+        }
+        return false;
       });
 
     if (isOverlapping) {

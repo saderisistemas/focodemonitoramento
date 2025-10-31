@@ -31,13 +31,19 @@ export const ShiftTimeline = ({ operator, periods }: ShiftTimelineProps) => {
 
   const shiftStart = timeToMinutes(operator.horário_inicio);
   const shiftEnd = timeToMinutes(operator.horário_fim);
-  const totalDuration = shiftEnd - shiftStart;
+  const totalDuration = shiftEnd > shiftStart ? shiftEnd - shiftStart : (1440 - shiftStart) + shiftEnd;
 
   if (totalDuration <= 0) {
     return <p>Duração do turno inválida.</p>;
   }
 
-  const sortedPeriods = [...periods].sort((a, b) => timeToMinutes(a.horário_inicio) - timeToMinutes(b.horário_inicio));
+  const sortedPeriods = [...periods].sort((a, b) => {
+    let aStart = timeToMinutes(a.horário_inicio);
+    let bStart = timeToMinutes(b.horário_inicio);
+    if (aStart < shiftStart) aStart += 1440;
+    if (bStart < shiftStart) bStart += 1440;
+    return aStart - bStart;
+  });
 
   return (
     <Card>
@@ -46,19 +52,25 @@ export const ShiftTimeline = ({ operator, periods }: ShiftTimelineProps) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="w-full bg-secondary rounded-full h-8 flex overflow-hidden">
+          <div className="relative w-full bg-secondary rounded-full h-8 overflow-hidden">
             {sortedPeriods.map((period) => {
               const periodStart = timeToMinutes(period.horário_inicio);
               const periodEnd = timeToMinutes(period.horário_fim);
-              const duration = periodEnd - periodStart;
-              const marginLeft = ((periodStart - shiftStart) / totalDuration) * 100;
+              
+              const isPeriodNightShift = periodStart > periodEnd;
+              const duration = isPeriodNightShift ? (1440 - periodStart) + periodEnd : periodEnd - periodStart;
+              
+              const normalizedPeriodStart = periodStart < shiftStart ? periodStart + 1440 : periodStart;
+              const offset = normalizedPeriodStart - shiftStart;
+
+              const left = (offset / totalDuration) * 100;
               const width = (duration / totalDuration) * 100;
 
               return (
                 <div
                   key={period.id}
-                  className={`h-full ${getFocusColorClass(period.foco)}`}
-                  style={{ position: 'absolute', left: `${marginLeft}%`, width: `${width}%` }}
+                  className={`absolute h-full ${getFocusColorClass(period.foco)}`}
+                  style={{ left: `${left}%`, width: `${width}%` }}
                 />
               );
             })}
