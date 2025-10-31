@@ -1,91 +1,119 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { Clock, Users } from "lucide-react";
+import { Tables } from "@/integrations/supabase/types";
 
-type FocusArea = "IRIS" | "Situator" | "Apoio";
-type OperatorStatus = "Em operação" | "Pausa" | "Fora de turno";
+type Operator = Tables<"operadores">;
+type Period = Tables<"operador_periodos">;
+type Status = Tables<"status_realtime">;
 
-interface Operator {
-  id: string;
-  nome: string;
-  foco_padrao: FocusArea;
-  tipo_turno: string;
-  cor: string;
-  status?: OperatorStatus;
-}
+type ProcessedOperator = Operator & {
+  status: Status["status"];
+  isOnShift: boolean;
+  currentFocus: string;
+  currentPeriod: Period | null;
+};
+
+const timeToMinutes = (time: string): number => {
+  if (!time) return 0;
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+const getCurrentShiftInfo = (operator: Operator, periods: Period[], currentTime: Date) => {
+  if (!operator.horário_inicio || !operator.horário_fim) {
+    return { isOnShift: false, currentFocus: operator.foco_padrao, currentPeriod: null };
+  }
+
+  const now = currentTime;
+  const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+  const shiftStart = timeToMinutes(operator.horário_inicio);
+  const shiftEnd = timeToMinutes(operator.horário_fim);
+
+  let isOnShift = false;
+  if (shiftStart > shiftEnd) { // Night shift (e.g., 22:00 to 06:00)
+    if (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd) {
+      isOnShift = true;
+    }
+  } else { // Day shift
+    if (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd) {
+      isOnShift = true;
+    }
+  }
+
+  let currentFocus: string = operator.foco_padrao;
+  let currentPeriod = null;
+
+  if (isOnShift) {
+    for (const period of periods) {
+      const periodStart = timeToMinutes(period.horário_inicio);
+      const periodEnd = timeToMinutes(period.horário_fim);
+      if (currentTimeInMinutes >= periodStart && currentTimeInMinutes < periodEnd) {
+        currentFocus = period.foco;
+        currentPeriod = period;
+        break;
+      }
+    }
+  }
+
+  return { isOnShift, currentFocus, currentPeriod };
+};
 
 const TVPanel = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [operators, setOperators] = useState<Operator[]>([]);
-  const [currentLeader, setCurrentLeader] = useState<string>("Danilo");
 
   useEffect(() => {
-    // Update clock every second
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    fetchOperators();
+  const { data, isLoading } = useQuery({
+    queryKey: ["tv_panel_data"],
+    queryFn: async () => {
+      const [operatorsRes, statusRes, periodsRes] = await Promise.all([
+        supabase.from("operadores").select("*").eq("ativo", true),
+        supabase.from("status_realtime").select("*"),
+        supabase.from("operador_periodos").select("*"),
+      ]);
 
-    // Subscribe to real-time updates
-    const channel = supabase
-      .channel("tv-panel-updates")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "operadores" },
-        () => fetchOperators()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "status_realtime" },
-        () => fetchOperators()
-      )
-      .subscribe();
+      if (operatorsRes.error) throw operatorsRes.error;
+      if (statusRes.error) throw statusRes.error;
+      if (periodsRes.error) throw periodsRes.error;
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      return {
+        operators: operatorsRes.data,
+        statuses: statusRes.data,
+        periods: periodsRes.data,
+      };
+    },
+    refetchInterval: 60000, // Refetch data every minute
+  });
 
-  useEffect(() => {
-    // Determine current leader based on time
-    const hour = currentTime.getHours();
-    if (hour >= 6 && hour < 14) {
-      setCurrentLeader("Angélica");
-    } else if (hour >= 14 && hour < 22) {
-      setCurrentLeader("Alan");
-    } else {
-      setCurrentLeader("Santana");
-    }
-  }, [currentTime]);
+  const onShiftOperators = useMemo(() => {
+    if (!data) return [];
 
-  const fetchOperators = async () => {
-    const { data: operatorsData } = await supabase
-      .from("operadores")
-      .select("*")
-      .eq("ativo", true);
+    return data.operators
+      .map((op) => {
+        const operatorPeriods = data.periods.filter((p) => p.operador_id === op.id);
+        const operatorStatus = data.statuses.find((s) => s.operador_id === op.id)?.status || "Fora de turno";
+        const shiftInfo = getCurrentShiftInfo(op, operatorPeriods, currentTime);
 
-    if (operatorsData) {
-      const { data: statusData } = await supabase
-        .from("status_realtime")
-        .select("*");
+        return {
+          ...op,
+          status: operatorStatus,
+          ...shiftInfo,
+        };
+      })
+      .filter((op) => op.isOnShift);
+  }, [data, currentTime]);
 
-      const operatorsWithStatus = operatorsData.map((op) => ({
-        ...op,
-        status:
-          statusData?.find((s) => s.operador_id === op.id)?.status ||
-          "Fora de turno",
-      }));
-
-      setOperators(operatorsWithStatus);
-    }
+  const getOperatorsByFocus = (focus: string) => {
+    if (focus === "Ambos") return []; // 'Ambos' is handled by IRIS and Situator
+    return onShiftOperators.filter(op => op.currentFocus === focus || (focus === 'IRIS' && op.currentFocus === 'Ambos') || (focus === 'Situator' && op.currentFocus === 'Ambos'));
   };
 
-  const getOperatorsByFocus = (focus: FocusArea) =>
-    operators.filter((op) => op.foco_padrao === focus);
-
-  const getStatusIcon = (status?: OperatorStatus) => {
+  const getStatusIcon = (status?: ProcessedOperator["status"]) => {
     switch (status) {
       case "Em operação":
         return <div className="w-4 h-4 rounded-full status-active pulse-glow" />;
@@ -96,50 +124,40 @@ const TVPanel = () => {
     }
   };
 
-  const getCardClass = (focus: FocusArea) => {
+  const getCardClass = (focus: string) => {
     switch (focus) {
       case "IRIS":
+      case "Ambos":
         return "operator-card-iris";
       case "Situator":
         return "operator-card-situator";
       case "Apoio":
         return "operator-card-apoio";
+      default:
+        return "bg-secondary";
     }
   };
 
-  const getFocusColor = (focus: FocusArea) => {
-    switch (focus) {
-      case "IRIS":
-        return "text-iris";
-      case "Situator":
-        return "text-situator";
-      case "Apoio":
-        return "text-apoio";
-    }
-  };
-
-  const getCurrentShift = () => {
+  const currentLeader = useMemo(() => {
     const hour = currentTime.getHours();
-    if (hour >= 6 && hour < 18) {
-      return { name: "Diurno", color: "border-iris" };
-    }
-    return { name: "Noturno", color: "border-situator" };
-  };
+    if (hour >= 6 && hour < 14) return "Angélica";
+    if (hour >= 14 && hour < 22) return "Alan";
+    return "Santana";
+  }, [currentTime]);
 
-  const shift = getCurrentShift();
+  const shift = useMemo(() => {
+    const hour = currentTime.getHours();
+    if (hour >= 6 && hour < 18) return { name: "Diurno", color: "border-iris" };
+    return { name: "Noturno", color: "border-situator" };
+  }, [currentTime]);
 
   return (
     <div className="min-h-screen bg-background p-8">
-      {/* Header */}
       <header className={`mb-8 border-b-4 ${shift.color} pb-6`}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-5xl font-bold mb-2">
-              Central Patrimonium
-            </h1>
-            <p className="text-2xl text-muted-foreground">
-              Escala em Tempo Real
-            </p>
+            <h1 className="text-5xl font-bold mb-2">Central Patrimonium</h1>
+            <p className="text-2xl text-muted-foreground">Escala em Tempo Real</p>
           </div>
           <div className="text-right space-y-2">
             <div className="flex items-center gap-3 justify-end text-3xl font-bold">
@@ -150,91 +168,54 @@ const TVPanel = () => {
               <Users className="w-6 h-6" />
               Líder: {currentLeader}
             </div>
-            <div className="text-lg text-muted-foreground">
-              Turno: {shift.name}
-            </div>
+            <div className="text-lg text-muted-foreground">Turno: {shift.name}</div>
           </div>
         </div>
       </header>
 
-      {/* Main Content - 3 Columns */}
       <div className="grid grid-cols-3 gap-8 mb-8">
-        {/* IRIS Column */}
-        <div>
-          <div className="mb-6 flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-iris" />
-            <h2 className="text-3xl font-bold text-iris">🟠 IRIS</h2>
-          </div>
-          <div className="space-y-4">
-            {getOperatorsByFocus("IRIS").map((operator) => (
-              <div
-                key={operator.id}
-                className={`${getCardClass("IRIS")} rounded-2xl p-6 transition-all duration-300`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-2xl font-bold">{operator.nome}</h3>
-                  {getStatusIcon(operator.status)}
+        {/* Columns */}
+        {(["IRIS", "Situator", "Apoio"] as const).map((focus) => (
+          <div key={focus}>
+            <div className="mb-6 flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full bg-${focus.toLowerCase()}`} />
+              <h2 className={`text-3xl font-bold text-${focus.toLowerCase()}`}>
+                {focus === "IRIS" && "🟠 IRIS"}
+                {focus === "Situator" && "🔵 Situator"}
+                {focus === "Apoio" && "🟢 Apoio/Supervisão"}
+              </h2>
+            </div>
+            <div className="space-y-4">
+              {getOperatorsByFocus(focus).map((operator) => (
+                <div
+                  key={operator.id}
+                  className={`${getCardClass(operator.currentFocus)} rounded-2xl p-6 transition-all duration-300`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-2xl font-bold">
+                      {operator.nome}{" "}
+                      <strong className="text-base font-normal text-muted-foreground">
+                        ({operator.horário_inicio} - {operator.horário_fim})
+                      </strong>
+                    </h3>
+                    {getStatusIcon(operator.status)}
+                  </div>
+                  {operator.currentPeriod ? (
+                    <p className="text-sm text-iris font-semibold">
+                      Foco: {operator.currentPeriod.foco} ({operator.currentPeriod.horário_inicio} - {operator.currentPeriod.horário_fim})
+                    </p>
+                  ) : (
+                     <p className="text-sm text-muted-foreground">
+                        Foco Padrão: {operator.foco_padrao}
+                     </p>
+                  )}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {operator.tipo_turno.replace("_", " ").toUpperCase()}
-                </p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-
-        {/* Situator Column */}
-        <div>
-          <div className="mb-6 flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-situator" />
-            <h2 className="text-3xl font-bold text-situator">🔵 Situator</h2>
-          </div>
-          <div className="space-y-4">
-            {getOperatorsByFocus("Situator").map((operator) => (
-              <div
-                key={operator.id}
-                className={`${getCardClass("Situator")} rounded-2xl p-6 transition-all duration-300`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-2xl font-bold">{operator.nome}</h3>
-                  {getStatusIcon(operator.status)}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {operator.tipo_turno.replace("_", " ").toUpperCase()}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Apoio Column */}
-        <div>
-          <div className="mb-6 flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-apoio" />
-            <h2 className="text-3xl font-bold text-apoio">
-              🟢 Apoio/Supervisão
-            </h2>
-          </div>
-          <div className="space-y-4">
-            {getOperatorsByFocus("Apoio").map((operator) => (
-              <div
-                key={operator.id}
-                className={`${getCardClass("Apoio")} rounded-2xl p-6 transition-all duration-300`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-2xl font-bold">{operator.nome}</h3>
-                  {getStatusIcon(operator.status)}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {operator.tipo_turno.replace("_", " ").toUpperCase()}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Footer */}
       <footer className="border-t border-border pt-6">
         <p className="text-center text-lg text-muted-foreground leading-relaxed max-w-4xl mx-auto">
           <strong>Central Patrimonium</strong> – Supervisão contínua. Mudanças
