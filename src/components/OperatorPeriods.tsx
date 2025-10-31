@@ -51,8 +51,8 @@ const periodSchema = z.object({
 
 const timeToMinutes = (time: string): number => {
   if (!time) return 0;
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
+  const parts = time.split(':').map(Number);
+  return (parts[0] || 0) * 60 + (parts[1] || 0);
 };
 
 export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => {
@@ -123,37 +123,32 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
     const periodStartMins = timeToMinutes(values.horário_inicio);
     const periodEndMins = timeToMinutes(values.horário_fim);
 
-    if (periodEndMins !== 0 && periodEndMins <= periodStartMins) {
+    if (periodEndMins <= periodStartMins) {
         toast.error("Horário inválido", { description: "O horário de início deve ser anterior ao de fim." });
         return;
     }
 
-    // --- Boundary and Overlap Validation using a normalized timeline ---
-    let normMainEndMins = mainEndMins < mainStartMins ? mainEndMins + 1440 : mainEndMins;
+    const isNightShift = mainStartMins > mainEndMins;
+    let isWithinBounds = false;
 
-    const normalizePeriod = (start: number, end: number) => {
-        let normStart = start;
-        let normEnd = end;
-        if (normEnd < normStart) { normEnd += 1440; }
-        if (mainEndMins < mainStartMins && normStart < mainStartMins) {
-            normStart += 1440;
-            normEnd += 1440;
-        }
-        return { start: normStart, end: normEnd };
-    };
+    if (isNightShift) {
+        const isPeriodInGap = periodStartMins >= mainEndMins && periodEndMins <= mainStartMins;
+        isWithinBounds = !isPeriodInGap;
+    } else {
+        isWithinBounds = periodStartMins >= mainStartMins && periodEndMins <= mainEndMins;
+    }
 
-    const newPeriod = normalizePeriod(periodStartMins, periodEndMins);
-
-    if (newPeriod.start < mainStartMins || newPeriod.end > normMainEndMins) {
-      toast.error("Fora do turno", { description: "O período deve estar dentro do turno principal do operador." });
-      return;
+    if (!isWithinBounds) {
+        toast.error("Fora do turno", { description: "O período deve estar dentro do turno principal do operador." });
+        return;
     }
 
     const isOverlapping = periods
       .filter(p => p.id !== editingPeriod?.id)
       .some(p => {
-        const existingPeriod = normalizePeriod(timeToMinutes(p.horário_inicio), timeToMinutes(p.horário_fim));
-        return newPeriod.start < existingPeriod.end && newPeriod.end > existingPeriod.start;
+        const existingStartMins = timeToMinutes(p.horário_inicio);
+        const existingEndMins = timeToMinutes(p.horário_fim);
+        return periodStartMins < existingEndMins && periodEndMins > existingStartMins;
       });
 
     if (isOverlapping) {
