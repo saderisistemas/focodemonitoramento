@@ -6,6 +6,7 @@ import TVPanel from "./pages/TVPanel";
 import ManualSchedule from "./pages/ManualSchedule";
 import StatusManagement from "./pages/StatusManagement";
 import OperatorManagement from "./pages/OperatorManagement";
+import WeekendSchedule from "./pages/WeekendSchedule";
 import Navigation from "./components/Navigation";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<TVPanel />} />
           <Route path="/tv-panel" element={<TVPanel />} />
           <Route path="/manual-schedule" element={<ManualSchedule />} />
+          <Route path="/weekend-schedule" element={<WeekendSchedule />} />
           <Route path="/status" element={<StatusManagement />} />
           <Route path="/operator-management" element={<OperatorManagement />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
