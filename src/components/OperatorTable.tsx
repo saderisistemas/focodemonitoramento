@@ -78,12 +78,12 @@ const OperatorTable = ({ operators, isLoading, onEdit, onDelete }: OperatorTable
                 </Badge>
               </TableCell>
               <TableCell className="text-right space-x-2">
-                <Button variant="outline" size="icon" onClick={() => onEdit(op)} style={{ color: '#0099FF', borderColor: '#0099FF' }}>
+                <Button variant="outline" size="icon" onClick={() => onEdit(op)} className="btn-edit-outline">
                   <Edit className="h-4 w-4" />
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="icon" style={{ backgroundColor: '#CC3333' }}>
+                    <Button variant="destructive" size="icon" className="btn-danger">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>
@@ -96,7 +96,7 @@ const OperatorTable = ({ operators, isLoading, onEdit, onDelete }: OperatorTable
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDelete(op.id)} style={{ backgroundColor: '#CC3333' }}>
+                      <AlertDialogAction onClick={() => onDelete(op.id)} className="btn-danger">
                         Excluir
                       </AlertDialogAction>
                     </AlertDialogFooter>

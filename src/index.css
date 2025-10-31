@@ -89,6 +89,22 @@ All colors MUST be HSL.
 }
 
 @layer components {
+  /* Custom Button Styles */
+  .btn-success {
+    @apply bg-[#00CC66] text-primary-foreground hover:bg-[#00b359];
+  }
+  .btn-danger {
+    @apply bg-[#CC3333] text-primary-foreground hover:bg-[#b32d2d];
+  }
+  .btn-edit-outline {
+    @apply text-[#0099FF] border-[#0099FF] hover:bg-[#0099FF]/10;
+  }
+
+  /* Custom Text Colors */
+  .text-accent-orange {
+    @apply text-[#FF8800];
+  }
+
   /* Operator Card Variants */
   .operator-card-iris {
     @apply bg-[hsl(var(--iris-bg))] border border-[hsl(var(--iris))] shadow-[var(--shadow-iris)];

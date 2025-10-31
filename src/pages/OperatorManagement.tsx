@@ -106,7 +106,7 @@ const OperatorManagement = () => {
         <div className="bg-card rounded-2xl p-8 border border-border space-y-12">
           {/* Operator Form Section */}
           <div>
-            <h1 className="text-4xl font-bold mb-2" style={{ color: '#FF8800' }}>Gestão de Operadores</h1>
+            <h1 className="text-4xl font-bold mb-2 text-accent-orange">Gestão de Operadores</h1>
             <p className="text-muted-foreground mb-6">
               Cadastre, edite e defina períodos de atuação de cada operador.
             </p>
@@ -135,7 +135,7 @@ const OperatorManagement = () => {
           {selectedOperator && (
             <div>
               <h2 className="text-3xl font-bold mb-6">
-                Períodos de Dedicação: <span style={{ color: '#FF8800' }}>{selectedOperator.nome}</span>
+                Períodos de Dedicação: <span className="text-accent-orange">{selectedOperator.nome}</span>
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <OperatorPeriods operator={selectedOperator} periods={periods || []} />

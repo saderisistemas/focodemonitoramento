@@ -216,7 +216,7 @@ const WeekendSchedule = () => {
                 <Label>Observação</Label>
                 <Textarea {...form.register("observacao")} />
               </div>
-              <Button type="submit" style={{ backgroundColor: '#00CC66' }} className="w-full">
+              <Button type="submit" className="w-full btn-success">
                 <PlusCircle className="mr-2 h-4 w-4" /> Salvar Alocação
               </Button>
             </form>
@@ -280,7 +280,7 @@ const WeekendSchedule = () => {
                                 <TableCell>{op.foco_padrao || (op as any).foco}</TableCell>
                                 <TableCell className="text-right">
                                     {op.type === 'Manual' && (
-                                        <Button variant="destructive" size="icon" onClick={() => deleteAllocationMutation.mutate(op.id)} style={{ backgroundColor: '#CC3333' }}>
+                                        <Button variant="destructive" size="icon" onClick={() => deleteAllocationMutation.mutate(op.id)} className="btn-danger">
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     )}

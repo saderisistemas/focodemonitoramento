@@ -207,14 +207,14 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
         </div>
 
         <div className="flex gap-4">
-            <Button type="submit" disabled={isLoading} className="flex-1" size="lg" style={{ backgroundColor: '#00CC66' }}>
+            <Button type="submit" disabled={isLoading} className="flex-1 btn-success" size="lg">
                 {isLoading ? "Salvando..." : "Salvar Operador"}
             </Button>
             <Button type="button" variant="secondary" onClick={handleClear} size="lg">Limpar Campos</Button>
             {onDelete && (
                  <AlertDialog>
                  <AlertDialogTrigger asChild>
-                    <Button type="button" variant="destructive" size="lg" style={{ backgroundColor: '#CC3333' }}>Excluir</Button>
+                    <Button type="button" variant="destructive" size="lg" className="btn-danger">Excluir</Button>
                  </AlertDialogTrigger>
                  <AlertDialogContent>
                    <AlertDialogHeader>
@@ -225,7 +225,7 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
                    </AlertDialogHeader>
                    <AlertDialogFooter>
                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                     <AlertDialogAction onClick={onDelete} style={{ backgroundColor: '#CC3333' }}>
+                     <AlertDialogAction onClick={onDelete} className="btn-danger">
                        Excluir
                      </AlertDialogAction>
                    </AlertDialogFooter>

@@ -185,7 +185,7 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
           <FormField control={form.control} name="observação" render={({ field }) => (
             <FormItem><FormLabel>Observação</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
           )} />
-          <Button type="submit" className="w-full" style={{ backgroundColor: '#00CC66' }}>Adicionar Período</Button>
+          <Button type="submit" className="w-full btn-success">Adicionar Período</Button>
         </form>
       </Form>
 
