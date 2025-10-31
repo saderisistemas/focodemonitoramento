@@ -125,7 +125,7 @@ const WeekendSchedule = () => {
     },
     onSuccess: () => {
       toast.success("Alocação salva com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["manual_schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["manual_schedule", format(saturday, "yyyy-MM-dd")] });
       form.reset({ data: format(saturday, "yyyy-MM-dd") });
     },
     onError: (error) => toast.error("Erro ao salvar", { description: error.message }),
@@ -138,7 +138,7 @@ const WeekendSchedule = () => {
     },
     onSuccess: () => {
         toast.success("Alocação removida com sucesso!");
-        queryClient.invalidateQueries({ queryKey: ["manual_schedule"] });
+        queryClient.invalidateQueries({ queryKey: ["manual_schedule", format(saturday, "yyyy-MM-dd")] });
     },
     onError: (error) => toast.error("Erro ao remover", { description: error.message }),
   });
