@@ -20,6 +20,17 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Operator } from "@/pages/OperatorManagement";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
@@ -31,15 +42,17 @@ const formSchema = z.object({
   ativo: z.boolean().default(true),
 });
 
-type OperatorFormData = z.infer<typeof formSchema>;
+export type OperatorFormData = z.infer<typeof formSchema>;
 
 interface OperatorFormProps {
   initialData: Operator | null;
   onSubmit: (data: OperatorFormData & { id?: string }) => void;
   isLoading: boolean;
+  onClear: () => void;
+  onDelete?: () => void;
 }
 
-const OperatorForm = ({ initialData, onSubmit, isLoading }: OperatorFormProps) => {
+const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: OperatorFormProps) => {
   const form = useForm<OperatorFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,6 +69,19 @@ const OperatorForm = ({ initialData, onSubmit, isLoading }: OperatorFormProps) =
   const handleSubmit = (values: OperatorFormData) => {
     onSubmit({ ...values, id: initialData?.id });
   };
+
+  const handleClear = () => {
+    form.reset({
+        nome: "",
+        tipo_turno: "12x36_diurno",
+        foco_padrao: "IRIS",
+        cor: "#FF8800",
+        horário_inicio: "06:00",
+        horário_fim: "18:00",
+        ativo: true,
+    });
+    onClear();
+  }
 
   return (
     <Form {...form}>
@@ -180,9 +206,33 @@ const OperatorForm = ({ initialData, onSubmit, isLoading }: OperatorFormProps) =
             />
         </div>
 
-        <Button type="submit" disabled={isLoading} className="w-full" size="lg" style={{ backgroundColor: '#FF8800' }}>
-          {isLoading ? "Salvando..." : "Salvar Operador"}
-        </Button>
+        <div className="flex gap-4">
+            <Button type="submit" disabled={isLoading} className="flex-1" size="lg" style={{ backgroundColor: '#00CC66' }}>
+                {isLoading ? "Salvando..." : "Salvar Operador"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleClear} size="lg">Limpar Campos</Button>
+            {onDelete && (
+                 <AlertDialog>
+                 <AlertDialogTrigger asChild>
+                    <Button type="button" variant="destructive" size="lg" style={{ backgroundColor: '#CC3333' }}>Excluir</Button>
+                 </AlertDialogTrigger>
+                 <AlertDialogContent>
+                   <AlertDialogHeader>
+                     <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                     <AlertDialogDescription>
+                       Essa ação não pode ser desfeita. Isso excluirá permanentemente o operador.
+                     </AlertDialogDescription>
+                   </AlertDialogHeader>
+                   <AlertDialogFooter>
+                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                     <AlertDialogAction onClick={onDelete} style={{ backgroundColor: '#CC3333' }}>
+                       Excluir
+                     </AlertDialogAction>
+                   </AlertDialogFooter>
+                 </AlertDialogContent>
+               </AlertDialog>
+            )}
+        </div>
       </form>
     </Form>
   );

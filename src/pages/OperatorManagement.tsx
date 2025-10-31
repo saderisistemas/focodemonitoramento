@@ -2,30 +2,25 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, PlusCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import OperatorForm from "@/components/OperatorForm";
+import OperatorForm, { OperatorFormData } from "@/components/OperatorForm";
 import OperatorTable from "@/components/OperatorTable";
-import { Tables } from "@/integrations/supabase/types";
+import OperatorPeriods from "@/components/OperatorPeriods";
+import ShiftTimeline from "@/components/ShiftTimeline";
+import { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 export type Operator = Tables<"operadores">;
+export type Period = Tables<"operador_periodos">;
 
 const OperatorManagement = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
 
-  // Fetch operators
-  const { data: operators, isLoading } = useQuery({
+  // Fetch all operators for the table
+  const { data: operators, isLoading: isLoadingOperators } = useQuery({
     queryKey: ["operators"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -37,46 +32,62 @@ const OperatorManagement = () => {
     },
   });
 
-  // Create/Update mutation
+  // Fetch periods for the selected operator
+  const { data: periods, isLoading: isLoadingPeriods } = useQuery({
+    queryKey: ["periods", selectedOperator?.id],
+    queryFn: async () => {
+      if (!selectedOperator?.id) return [];
+      const { data, error } = await supabase
+        .from("operador_periodos")
+        .select("*")
+        .eq("operador_id", selectedOperator.id)
+        .order("horário_inicio", { ascending: true });
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: !!selectedOperator,
+  });
+
+  // Create/Update operator mutation
   const upsertMutation = useMutation({
-    mutationFn: async (operatorData: Omit<Operator, "id" | "created_at" | "updated_at"> & { id?: string }) => {
-      const { error } = await supabase.from("operadores").upsert(operatorData);
+    mutationFn: async (operatorData: TablesInsert<"operadores">) => {
+      const { error } = await supabase.from("operadores").upsert(operatorData, { onConflict: 'id' });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
-      toast.success(selectedOperator ? "Operador atualizado!" : "Operador criado com sucesso!");
-      setIsDialogOpen(false);
+      toast.success(selectedOperator ? "Operador atualizado!" : "Operador criado!");
       setSelectedOperator(null);
     },
     onError: (error) => {
-      toast.error("Erro ao salvar operador", { description: error.message });
+      toast.error("Erro ao salvar", { description: error.message });
     },
   });
 
-  // Delete mutation
+  // Delete operator mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("operadores").delete().eq("id", id);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
-      toast.success("Operador excluído com sucesso!");
+      toast.success("Operador excluído!");
+      if (selectedOperator?.id === deletedId) {
+        setSelectedOperator(null);
+      }
     },
     onError: (error) => {
-      toast.error("Erro ao excluir operador", { description: error.message });
+      toast.error("Erro ao excluir", { description: error.message });
     },
   });
 
-  const handleEdit = (operator: Operator) => {
+  const handleSelectOperator = (operator: Operator) => {
     setSelectedOperator(operator);
-    setIsDialogOpen(true);
   };
-
-  const handleAddNew = () => {
+  
+  const handleClearSelection = () => {
     setSelectedOperator(null);
-    setIsDialogOpen(true);
   };
 
   return (
@@ -87,43 +98,46 @@ const OperatorManagement = () => {
           Voltar ao Painel
         </Button>
 
-        <div className="bg-card rounded-2xl p-8 border border-border">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Gestão de Operadores</h1>
-              <p className="text-muted-foreground">
-                Crie, edite e gerencie os operadores da central.
-              </p>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="lg" onClick={handleAddNew} style={{ backgroundColor: '#FF8800' }}>
-                  <PlusCircle className="mr-2 h-5 w-5" />
-                  Novo Operador
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl">
-                    {selectedOperator ? "Editar Operador" : "Criar Novo Operador"}
-                  </DialogTitle>
-                </DialogHeader>
-                <OperatorForm
-                  key={selectedOperator?.id || 'new'}
-                  initialData={selectedOperator}
-                  onSubmit={(data) => upsertMutation.mutate(data)}
-                  isLoading={upsertMutation.isPending}
-                />
-              </DialogContent>
-            </Dialog>
+        <div className="bg-card rounded-2xl p-8 border border-border space-y-12">
+          {/* Operator Form Section */}
+          <div>
+            <h1 className="text-4xl font-bold mb-2" style={{ color: '#FF8800' }}>Gestão de Operadores</h1>
+            <p className="text-muted-foreground mb-6">
+              Cadastre, edite e defina períodos de atuação de cada operador.
+            </p>
+            <OperatorForm
+              key={selectedOperator?.id || 'new'}
+              initialData={selectedOperator}
+              onSubmit={(data) => upsertMutation.mutate(data as TablesInsert<"operadores">)}
+              isLoading={upsertMutation.isPending}
+              onClear={handleClearSelection}
+              onDelete={selectedOperator ? () => deleteMutation.mutate(selectedOperator.id) : undefined}
+            />
           </div>
 
-          <OperatorTable
-            operators={operators || []}
-            isLoading={isLoading}
-            onEdit={handleEdit}
-            onDelete={(id) => deleteMutation.mutate(id)}
-          />
+          {/* Operator Table Section */}
+          <div>
+            <h2 className="text-3xl font-bold mb-6">Operadores Cadastrados</h2>
+            <OperatorTable
+              operators={operators || []}
+              isLoading={isLoadingOperators}
+              onEdit={handleSelectOperator}
+              onDelete={(id) => deleteMutation.mutate(id)}
+            />
+          </div>
+
+          {/* Sub-periods and Timeline Section */}
+          {selectedOperator && (
+            <div>
+              <h2 className="text-3xl font-bold mb-6">
+                Períodos de Dedicação: <span style={{ color: '#FF8800' }}>{selectedOperator.nome}</span>
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <OperatorPeriods operator={selectedOperator} periods={periods || []} />
+                <ShiftTimeline operator={selectedOperator} periods={periods || []} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

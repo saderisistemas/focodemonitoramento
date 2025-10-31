@@ -83,7 +83,7 @@ const OperatorTable = ({ operators, isLoading, onEdit, onDelete }: OperatorTable
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="icon">
+                    <Button variant="destructive" size="icon" style={{ backgroundColor: '#CC3333' }}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>
@@ -96,7 +96,7 @@ const OperatorTable = ({ operators, isLoading, onEdit, onDelete }: OperatorTable
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDelete(op.id)}>
+                      <AlertDialogAction onClick={() => onDelete(op.id)} style={{ backgroundColor: '#CC3333' }}>
                         Excluir
                       </AlertDialogAction>
                     </AlertDialogFooter>
