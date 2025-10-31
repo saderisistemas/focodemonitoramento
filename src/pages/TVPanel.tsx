@@ -124,7 +124,6 @@ const TVPanel = () => {
               break;
             }
           }
-          // **THE FIX**: If on shift but no specific period is active, default to "Apoio"
           if (!currentFocus) {
             currentFocus = "Apoio";
           }
@@ -154,8 +153,13 @@ const TVPanel = () => {
   const getOperatorsByFocus = (focus: string) => {
     return onShiftOperators.filter(op => {
       if (!op.currentFocus) return false;
-      if (op.currentFocus === focus) return true;
-      if (op.currentFocus === "Ambos" && (focus === "IRIS" || focus === "Situator")) return true;
+      
+      const isEqual = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+      if (isEqual(op.currentFocus, focus)) return true;
+      
+      if (isEqual(op.currentFocus, "Ambos") && (isEqual(focus, "IRIS") || isEqual(focus, "Situator"))) return true;
+      
       return false;
     });
   };
@@ -172,15 +176,15 @@ const TVPanel = () => {
   };
 
   const getCardClass = (focus: string | null) => {
-    switch (focus) {
-      case "IRIS":
+    const normalizedFocus = (focus || "").toLowerCase();
+    switch (normalizedFocus) {
+      case "iris":
+      case "ambos":
         return "operator-card-iris";
-      case "Situator":
+      case "situator":
         return "operator-card-situator";
-      case "Apoio":
+      case "apoio":
         return "operator-card-apoio";
-      case "Ambos":
-        return "operator-card-iris"; // Or another default if you prefer
       default:
         return "bg-secondary";
     }
