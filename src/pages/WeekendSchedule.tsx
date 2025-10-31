@@ -56,7 +56,6 @@ const manualAllocationSchema = z.object({
 });
 
 const WeekendSchedule = () => {
-  const queryClient = useQueryClient();
   const [saturday, sunday] = useMemo(() => {
     const today = new Date();
     return [nextSaturday(today), nextSunday(today)];
@@ -103,7 +102,7 @@ const WeekendSchedule = () => {
     },
   });
 
-  const { data: manualSchedule } = useQuery({
+  const { data: manualSchedule, refetch: refetchManualSchedule } = useQuery({
     queryKey: queryKey,
     queryFn: async (): Promise<ManualScheduleEntry[]> => {
       const { data, error } = await supabase
@@ -127,7 +126,7 @@ const WeekendSchedule = () => {
     },
     onSuccess: () => {
       toast.success("Alocação salva com sucesso!");
-      queryClient.invalidateQueries({ queryKey: queryKey });
+      refetchManualSchedule();
       form.reset({ data: format(saturday, "yyyy-MM-dd") });
     },
     onError: (error) => toast.error("Erro ao salvar", { description: error.message }),
@@ -140,7 +139,7 @@ const WeekendSchedule = () => {
     },
     onSuccess: () => {
       toast.success("Alocação removida com sucesso!");
-      queryClient.invalidateQueries({ queryKey: queryKey });
+      refetchManualSchedule();
     },
     onError: (error) => toast.error("Erro ao remover", { description: error.message }),
   });
