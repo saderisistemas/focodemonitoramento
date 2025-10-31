@@ -51,13 +51,18 @@ const OperatorManagement = () => {
   // Create/Update operator mutation
   const upsertMutation = useMutation({
     mutationFn: async (operatorData: TablesInsert<"operadores">) => {
-      const { error } = await supabase.from("operadores").upsert(operatorData, { onConflict: 'id' });
+      const { data, error } = await supabase
+        .from("operadores")
+        .upsert(operatorData, { onConflict: 'id' })
+        .select()
+        .single();
       if (error) throw new Error(error.message);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (newOrUpdatedOperator) => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
-      toast.success(selectedOperator ? "Operador atualizado!" : "Operador criado!");
-      setSelectedOperator(null);
+      toast.success(selectedOperator ? "Operador atualizado!" : "Operador criado com sucesso!");
+      setSelectedOperator(newOrUpdatedOperator);
     },
     onError: (error) => {
       toast.error("Erro ao salvar", { description: error.message });
