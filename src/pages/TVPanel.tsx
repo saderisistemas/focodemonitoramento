@@ -68,7 +68,19 @@ const getCurrentShiftInfo = (operator: Operator, periods: Period[], currentTime:
     for (const period of periods) {
       const periodStart = timeToMinutes(period.horário_inicio);
       const periodEnd = timeToMinutes(period.horário_fim);
-      if (currentTimeInMinutes >= periodStart && currentTimeInMinutes < periodEnd) {
+      
+      let isInPeriod = false;
+      if (periodStart > periodEnd) { // Night shift period
+        if (currentTimeInMinutes >= periodStart || currentTimeInMinutes < periodEnd) {
+          isInPeriod = true;
+        }
+      } else { // Day shift period
+        if (currentTimeInMinutes >= periodStart && currentTimeInMinutes < periodEnd) {
+          isInPeriod = true;
+        }
+      }
+
+      if (isInPeriod) {
         currentFocus = period.foco;
         currentPeriod = period;
         break;
