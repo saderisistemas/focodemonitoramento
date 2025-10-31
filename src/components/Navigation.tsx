@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, Calendar, Activity } from "lucide-react";
+import { Home, Calendar, Activity, Users } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const Navigation = () => {
@@ -37,6 +37,15 @@ const Navigation = () => {
         >
           <Activity className="w-4 h-4 mr-2" />
           Status
+        </Button>
+        <Button
+          variant={isActive("/operator-management") ? "default" : "ghost"}
+          size="sm"
+          onClick={() => navigate("/operator-management")}
+          className="rounded-full"
+        >
+          <Users className="w-4 h-4 mr-2" />
+          Operadores
         </Button>
       </div>
     </nav>

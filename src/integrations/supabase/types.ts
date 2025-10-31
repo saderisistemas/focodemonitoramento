@@ -71,6 +71,8 @@ export type Database = {
           nome: string
           tipo_turno: Database["public"]["Enums"]["shift_type"]
           updated_at: string | null
+          horário_inicio: string | null
+          horário_fim: string | null
         }
         Insert: {
           ativo?: boolean | null
@@ -81,6 +83,8 @@ export type Database = {
           nome: string
           tipo_turno: Database["public"]["Enums"]["shift_type"]
           updated_at?: string | null
+          horário_inicio?: string | null
+          horário_fim?: string | null
         }
         Update: {
           ativo?: boolean | null
@@ -91,8 +95,51 @@ export type Database = {
           nome?: string
           tipo_turno?: Database["public"]["Enums"]["shift_type"]
           updated_at?: string | null
+          horário_inicio?: string | null
+          horário_fim?: string | null
         }
         Relationships: []
+      }
+      operador_periodos: {
+        Row: {
+          id: string
+          operador_id: string | null
+          horário_inicio: string
+          horário_fim: string
+          foco: string
+          observação: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          operador_id?: string | null
+          horário_inicio: string
+          horário_fim: string
+          foco: string
+          observação?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          operador_id?: string | null
+          horário_inicio?: string
+          horário_fim?: string
+          foco?: string
+          observação?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operador_periodos_operador_id_fkey"
+            columns: ["operador_id"]
+            isOneToOne: false
+            referencedRelation: "operadores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       status_realtime: {
         Row: {
