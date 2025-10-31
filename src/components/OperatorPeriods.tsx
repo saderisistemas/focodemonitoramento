@@ -112,15 +112,43 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
   });
 
   const onSubmit = (values: z.infer<typeof periodSchema>) => {
-    // Validation
-    if (values.horário_inicio >= values.horário_fim) {
-      toast.error("Horário inválido", { description: "O início deve ser antes do fim." });
+    const mainStart = operator.horário_inicio!;
+    const mainEnd = operator.horário_fim!;
+    const periodStart = values.horário_inicio;
+    const periodEnd = values.horário_fim;
+
+    const isNightShift = mainStart > mainEnd;
+    const periodCrossesMidnight = periodStart > periodEnd;
+
+    // Basic time validation
+    if (!periodCrossesMidnight && periodStart >= periodEnd) {
+      toast.error("Horário inválido", { description: "O horário de início deve ser anterior ao de fim." });
       return;
     }
-    if (values.horário_inicio < operator.horário_inicio! || values.horário_fim > operator.horário_fim!) {
+
+    // Advanced boundary validation
+    let isOutsideShift = false;
+    if (isNightShift) {
+      // For a night shift, the period is invalid if it's in the "off" time.
+      // The "off" time is between mainEnd and mainStart (e.g., 06:00 to 22:00).
+      if (!periodCrossesMidnight && (periodStart >= mainEnd && periodEnd <= mainStart)) {
+        isOutsideShift = true;
+      } else if (periodCrossesMidnight && (periodStart < mainStart || periodEnd > mainEnd)) {
+        // If the period itself crosses midnight, it must be contained within the main shift's times.
+        isOutsideShift = true;
+      }
+    } else {
+      // For a day shift, the logic is simple.
+      if (periodCrossesMidnight || periodStart < mainStart || periodEnd > mainEnd) {
+        isOutsideShift = true;
+      }
+    }
+
+    if (isOutsideShift) {
       toast.error("Fora do turno", { description: "O período deve estar dentro do turno principal do operador." });
       return;
     }
+
     // Overlap check
     const isOverlapping = periods
       .filter(p => p.id !== editingPeriod?.id)
