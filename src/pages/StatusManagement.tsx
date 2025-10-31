@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Activity, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -23,7 +23,6 @@ interface Operator {
 
 const StatusManagement = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [operators, setOperators] = useState<Operator[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -65,14 +64,11 @@ const StatusManagement = () => {
       });
 
     if (error) {
-      toast({
-        title: "Erro ao atualizar",
+      toast.error("Erro ao atualizar", {
         description: error.message,
-        variant: "destructive",
       });
     } else {
-      toast({
-        title: "Status atualizado!",
+      toast.success("Status atualizado!", {
         description: "Alteração refletida no painel TV.",
       });
       fetchOperators();

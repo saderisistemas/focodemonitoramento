@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Calendar, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -19,7 +19,6 @@ type FocusArea = "IRIS" | "Situator" | "Apoio";
 
 const ManualSchedule = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [operators, setOperators] = useState<any[]>([]);
 
@@ -54,14 +53,11 @@ const ManualSchedule = () => {
     const { error } = await supabase.from("escala_manual").insert([formData]);
 
     if (error) {
-      toast({
-        title: "Erro ao salvar",
+      toast.error("Erro ao salvar", {
         description: error.message,
-        variant: "destructive",
       });
     } else {
-      toast({
-        title: "Escala salva!",
+      toast.success("Escala salva!", {
         description: "Plantão manual registrado com sucesso.",
       });
       setFormData({
