@@ -124,6 +124,10 @@ const TVPanel = () => {
               break;
             }
           }
+          // **THE FIX**: If on shift but no specific period is active, default to "Apoio"
+          if (!currentFocus) {
+            currentFocus = "Apoio";
+          }
         }
         
         return { ...op, status: operatorStatus, isOnShift, currentFocus, currentPeriod };
@@ -170,12 +174,13 @@ const TVPanel = () => {
   const getCardClass = (focus: string | null) => {
     switch (focus) {
       case "IRIS":
-      case "Ambos":
         return "operator-card-iris";
       case "Situator":
         return "operator-card-situator";
       case "Apoio":
         return "operator-card-apoio";
+      case "Ambos":
+        return "operator-card-iris"; // Or another default if you prefer
       default:
         return "bg-secondary";
     }
@@ -248,7 +253,7 @@ const TVPanel = () => {
                     </p>
                   ) : (
                      <p className="text-sm text-muted-foreground">
-                        Sem foco específico definido para o horário.
+                        Foco: Apoio (Padrão)
                      </p>
                   )}
                 </div>
