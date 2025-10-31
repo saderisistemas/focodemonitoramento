@@ -62,6 +62,8 @@ const WeekendSchedule = () => {
     return [nextSaturday(today), nextSunday(today)];
   }, []);
 
+  const queryKey = ["manual_schedule", format(saturday, "yyyy-MM-dd")];
+
   const { data: config } = useQuery({
     queryKey: ["scale_config"],
     queryFn: async () => {
@@ -102,7 +104,7 @@ const WeekendSchedule = () => {
   });
 
   const { data: manualSchedule } = useQuery({
-    queryKey: ["manual_schedule", format(saturday, "yyyy-MM-dd")],
+    queryKey: queryKey,
     queryFn: async (): Promise<ManualScheduleEntry[]> => {
       const { data, error } = await supabase
         .from("escala_manual")
@@ -120,12 +122,19 @@ const WeekendSchedule = () => {
 
   const allocationMutation = useMutation({
     mutationFn: async (values: z.infer<typeof manualAllocationSchema>) => {
-      const { error } = await supabase.from("escala_manual").insert(values as any);
+      const { data, error } = await supabase
+        .from("escala_manual")
+        .insert(values as any)
+        .select("*, operadores(*)")
+        .single();
       if (error) throw error;
+      return data as ManualScheduleEntry;
     },
-    onSuccess: () => {
+    onSuccess: (newAllocation) => {
       toast.success("Alocação salva com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["manual_schedule"] });
+      queryClient.setQueryData<ManualScheduleEntry[]>(queryKey, (oldData) => {
+        return oldData ? [...oldData, newAllocation] : [newAllocation];
+      });
       form.reset({ data: format(saturday, "yyyy-MM-dd") });
     },
     onError: (error) => toast.error("Erro ao salvar", { description: error.message }),
@@ -135,10 +144,13 @@ const WeekendSchedule = () => {
     mutationFn: async (id: string) => {
         const { error } = await supabase.from("escala_manual").delete().eq("id", id);
         if (error) throw error;
+        return id;
     },
-    onSuccess: () => {
+    onSuccess: (deletedId) => {
         toast.success("Alocação removida com sucesso!");
-        queryClient.invalidateQueries({ queryKey: ["manual_schedule"] });
+        queryClient.setQueryData<ManualScheduleEntry[]>(queryKey, (oldData) => {
+            return oldData ? oldData.filter(item => item.id !== deletedId) : [];
+        });
     },
     onError: (error) => toast.error("Erro ao remover", { description: error.message }),
   });
