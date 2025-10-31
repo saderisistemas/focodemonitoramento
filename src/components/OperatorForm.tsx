@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import {
 const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
   tipo_turno: z.enum(["12x36_diurno", "12x36_noturno", "6x18"]),
+  turno_12x36_tipo: z.enum(["A", "B"]).optional().nullable(),
   foco_padrao: z.enum(["IRIS", "Situator", "Apoio"]),
   cor: z.string().regex(/^#[0-9A-F]{6}$/i, { message: "Cor inválida. Use o formato hexadecimal (ex: #FF8800)." }),
   horário_inicio: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Formato de hora inválido (HH:MM)." }),
@@ -58,6 +59,7 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
     defaultValues: {
       nome: initialData?.nome || "",
       tipo_turno: initialData?.tipo_turno || "12x36_diurno",
+      turno_12x36_tipo: initialData?.turno_12x36_tipo || null,
       foco_padrao: initialData?.foco_padrao || "IRIS",
       cor: initialData?.cor || "#FF8800",
       horário_inicio: initialData?.horário_inicio || "06:00",
@@ -66,14 +68,26 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
     },
   });
 
+  const tipoTurno = useWatch({
+    control: form.control,
+    name: "tipo_turno",
+  });
+
+  const is12x36 = tipoTurno === "12x36_diurno" || tipoTurno === "12x36_noturno";
+
   const handleSubmit = (values: OperatorFormData) => {
-    onSubmit({ ...values, id: initialData?.id });
+    const dataToSubmit = { ...values, id: initialData?.id };
+    if (!is12x36) {
+      dataToSubmit.turno_12x36_tipo = null;
+    }
+    onSubmit(dataToSubmit);
   };
 
   const handleClear = () => {
     form.reset({
         nome: "",
         tipo_turno: "12x36_diurno",
+        turno_12x36_tipo: null,
         foco_padrao: "IRIS",
         cor: "#FF8800",
         horário_inicio: "06:00",
@@ -100,7 +114,7 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="tipo_turno"
@@ -123,6 +137,29 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
               </FormItem>
             )}
           />
+          {is12x36 && (
+            <FormField
+              control={form.control}
+              name="turno_12x36_tipo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Turno 12x36</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione A ou B" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="A">Turno A</SelectItem>
+                      <SelectItem value="B">Turno B</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="foco_padrao"

@@ -11,7 +11,9 @@ import OperatorPeriods from "@/components/OperatorPeriods";
 import ShiftTimeline from "@/components/ShiftTimeline";
 import { Tables, TablesInsert } from "@/integrations/supabase/types";
 
-export type Operator = Tables<"operadores">;
+export type Operator = Tables<"operadores"> & {
+  turno_12x36_tipo?: "A" | "B" | null;
+};
 export type Period = Tables<"operador_periodos">;
 
 const OperatorManagement = () => {
@@ -28,7 +30,7 @@ const OperatorManagement = () => {
         .select("*")
         .order("nome", { ascending: true });
       if (error) throw new Error(error.message);
-      return data;
+      return data as Operator[];
     },
   });
 
@@ -62,7 +64,7 @@ const OperatorManagement = () => {
     onSuccess: (newOrUpdatedOperator) => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
       toast.success(selectedOperator ? "Operador atualizado!" : "Operador criado com sucesso!");
-      setSelectedOperator(newOrUpdatedOperator);
+      setSelectedOperator(newOrUpdatedOperator as Operator);
     },
     onError: (error) => {
       toast.error("Erro ao salvar", { description: error.message });

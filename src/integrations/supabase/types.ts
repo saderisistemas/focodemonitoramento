@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      configuracao_escala: {
+        Row: {
+          id: number
+          turno_a_trabalha_em_dias: string
+        }
+        Insert: {
+          id?: number
+          turno_a_trabalha_em_dias: string
+        }
+        Update: {
+          id?: number
+          turno_a_trabalha_em_dias?: string
+        }
+        Relationships: []
+      }
       escala_manual: {
         Row: {
           created_at: string | null
@@ -73,6 +88,7 @@ export type Database = {
           updated_at: string | null
           horário_inicio: string | null
           horário_fim: string | null
+          turno_12x36_tipo: Database["public"]["Enums"]["shift_12x36_type"] | null
         }
         Insert: {
           ativo?: boolean | null
@@ -85,6 +101,7 @@ export type Database = {
           updated_at?: string | null
           horário_inicio?: string | null
           horário_fim?: string | null
+          turno_12x36_tipo?: Database["public"]["Enums"]["shift_12x36_type"] | null
         }
         Update: {
           ativo?: boolean | null
@@ -97,6 +114,7 @@ export type Database = {
           updated_at?: string | null
           horário_inicio?: string | null
           horário_fim?: string | null
+          turno_12x36_tipo?: Database["public"]["Enums"]["shift_12x36_type"] | null
         }
         Relationships: []
       }
@@ -257,6 +275,7 @@ export type Database = {
     Enums: {
       focus_area: "IRIS" | "Situator" | "Apoio"
       operator_status: "Em operação" | "Pausa" | "Fora de turno"
+      shift_12x36_type: "A" | "B"
       shift_type: "12x36_diurno" | "12x36_noturno" | "6x18"
       user_role: "admin" | "leader" | "viewer"
     }
@@ -388,6 +407,7 @@ export const Constants = {
     Enums: {
       focus_area: ["IRIS", "Situator", "Apoio"],
       operator_status: ["Em operação", "Pausa", "Fora de turno"],
+      shift_12x36_type: ["A", "B"],
       shift_type: ["12x36_diurno", "12x36_noturno", "6x18"],
       user_role: ["admin", "leader", "viewer"],
     },

@@ -8,6 +8,7 @@ import OperatorManagement from "./pages/OperatorManagement";
 import WeekendSchedule from "./pages/WeekendSchedule";
 import Navigation from "./components/Navigation";
 import NotFound from "./pages/NotFound";
+import ScaleConfig from "./pages/ScaleConfig";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/weekend-schedule" element={<WeekendSchedule />} />
           <Route path="/status" element={<StatusManagement />} />
           <Route path="/operator-management" element={<OperatorManagement />} />
+          <Route path="/scale-config" element={<ScaleConfig />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, nextSaturday, nextSunday, isSaturday, isSunday } from "date-fns";
+import { format, nextSaturday, nextSunday, isSaturday, isSunday, getDate } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,13 +21,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -36,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Edit, Trash2, PlusCircle } from "lucide-react";
+import { PlusCircle, Trash2 } from "lucide-react";
 import { Operator } from "./OperatorManagement";
 
 type ManualScheduleEntry = {
@@ -69,6 +62,19 @@ const WeekendSchedule = () => {
     return [nextSaturday(today), nextSunday(today)];
   }, []);
 
+  const { data: config } = useQuery({
+    queryKey: ["scale_config"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("configuracao_escala")
+        .select("turno_a_trabalha_em_dias")
+        .eq("id", 1)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: autoOperators } = useQuery({
     queryKey: ["operators_12x36"],
     queryFn: async () => {
@@ -78,7 +84,7 @@ const WeekendSchedule = () => {
         .in("tipo_turno", ["12x36_diurno", "12x36_noturno"])
         .eq("ativo", true);
       if (error) throw error;
-      return data;
+      return data as Operator[];
     },
   });
 
@@ -138,7 +144,19 @@ const WeekendSchedule = () => {
   });
 
   const getScheduleForDay = (date: Date) => {
-    const auto = (autoOperators || []).map(op => ({ ...op, type: "Auto" }));
+    if (!config || !autoOperators) return [];
+
+    const dayOfMonth = getDate(date);
+    const isEvenDay = dayOfMonth % 2 === 0;
+    const turnAWorksOnEven = config.turno_a_trabalha_em_dias === 'pares';
+
+    const filteredAutoOperators = autoOperators.filter(op => {
+      if (op.turno_12x36_tipo === 'A') return isEvenDay === turnAWorksOnEven;
+      if (op.turno_12x36_tipo === 'B') return isEvenDay !== turnAWorksOnEven;
+      return false;
+    });
+
+    const auto = filteredAutoOperators.map(op => ({ ...op, type: "Auto" }));
     const manual = (manualSchedule || [])
       .filter(item => item.data === format(date, "yyyy-MM-dd"))
       .map(item => ({ ...item.operadores, type: "Manual", ...item }));
@@ -152,7 +170,6 @@ const WeekendSchedule = () => {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-12">
-        {/* Header */}
         <div>
           <h1 className="text-4xl font-bold mb-2">Escala de Finais de Semana</h1>
           <p className="text-muted-foreground mb-4">
@@ -163,7 +180,6 @@ const WeekendSchedule = () => {
           </div>
         </div>
 
-        {/* Manual Allocation Form */}
         <Card>
           <CardHeader>
             <CardTitle>Alocação Manual (Operadores 6x18)</CardTitle>
@@ -223,7 +239,6 @@ const WeekendSchedule = () => {
           </CardContent>
         </Card>
 
-        {/* Consolidated View */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <Card>
             <CardHeader><CardTitle>Sábado ({format(saturday, "dd/MM")})</CardTitle></CardHeader>
@@ -255,7 +270,6 @@ const WeekendSchedule = () => {
           </Card>
         </div>
 
-        {/* Detailed Table */}
         <Card>
             <CardHeader><CardTitle>Tabela Geral de Escala</CardTitle></CardHeader>
             <CardContent>
@@ -277,10 +291,10 @@ const WeekendSchedule = () => {
                                 <TableCell>{op.nome}</TableCell>
                                 <TableCell>{format(op.date, "dd/MM (EEE)", { locale: ptBR })}</TableCell>
                                 <TableCell>{op.horário_inicio} - {op.horário_fim}</TableCell>
-                                <TableCell>{op.foco_padrao || (op as any).foco}</TableCell>
+                                <TableCell>{(op as any).foco_padrao || (op as any).foco}</TableCell>
                                 <TableCell className="text-right">
                                     {op.type === 'Manual' && (
-                                        <Button variant="destructive" size="icon" onClick={() => deleteAllocationMutation.mutate(op.id)} className="btn-danger">
+                                        <Button variant="destructive" size="icon" onClick={() => deleteAllocationMutation.mutate((op as any).id)} className="btn-danger">
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     )}

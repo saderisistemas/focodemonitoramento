@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Clock, Users } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 
-type Operator = Tables<"operadores">;
+type Operator = Tables<"operadores"> & { turno_12x36_tipo?: "A" | "B" | null };
 type Period = Tables<"operador_periodos">;
 type Status = Tables<"status_realtime">;
+type Config = { turno_a_trabalha_em_dias: string };
 
 type ProcessedOperator = Operator & {
   status: Status["status"];
@@ -21,6 +22,24 @@ const timeToMinutes = (time: string): number => {
   return hours * 60 + minutes;
 };
 
+const isOperatorWorkingToday = (operator: Operator, date: Date, config: Config) => {
+  if (!operator.tipo_turno.startsWith("12x36")) {
+    return true; // Always on for 6x18 shifts
+  }
+
+  const dayOfMonth = date.getDate();
+  const isEvenDay = dayOfMonth % 2 === 0;
+  const turnAWorksOnEven = config.turno_a_trabalha_em_dias === 'pares';
+
+  if (operator.turno_12x36_tipo === 'A') {
+    return isEvenDay === turnAWorksOnEven;
+  }
+  if (operator.turno_12x36_tipo === 'B') {
+    return isEvenDay !== turnAWorksOnEven;
+  }
+  return false; // Not scheduled if 12x36 but no A/B turn assigned
+};
+
 const getCurrentShiftInfo = (operator: Operator, periods: Period[], currentTime: Date) => {
   if (!operator.horário_inicio || !operator.horário_fim) {
     return { isOnShift: false, currentFocus: operator.foco_padrao, currentPeriod: null };
@@ -32,7 +51,7 @@ const getCurrentShiftInfo = (operator: Operator, periods: Period[], currentTime:
   const shiftEnd = timeToMinutes(operator.horário_fim);
 
   let isOnShift = false;
-  if (shiftStart > shiftEnd) { // Night shift (e.g., 22:00 to 06:00)
+  if (shiftStart > shiftEnd) { // Night shift
     if (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd) {
       isOnShift = true;
     }
@@ -71,29 +90,33 @@ const TVPanel = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["tv_panel_data"],
     queryFn: async () => {
-      const [operatorsRes, statusRes, periodsRes] = await Promise.all([
+      const [operatorsRes, statusRes, periodsRes, configRes] = await Promise.all([
         supabase.from("operadores").select("*").eq("ativo", true),
         supabase.from("status_realtime").select("*"),
         supabase.from("operador_periodos").select("*"),
+        supabase.from("configuracao_escala").select("*").eq("id", 1).single(),
       ]);
 
       if (operatorsRes.error) throw operatorsRes.error;
       if (statusRes.error) throw statusRes.error;
       if (periodsRes.error) throw periodsRes.error;
+      if (configRes.error) throw configRes.error;
 
       return {
-        operators: operatorsRes.data,
+        operators: operatorsRes.data as Operator[],
         statuses: statusRes.data,
         periods: periodsRes.data,
+        config: configRes.data,
       };
     },
-    refetchInterval: 60000, // Refetch data every minute
+    refetchInterval: 60000,
   });
 
   const onShiftOperators = useMemo(() => {
     if (!data) return [];
 
     return data.operators
+      .filter(op => isOperatorWorkingToday(op, currentTime, data.config))
       .map((op) => {
         const operatorPeriods = data.periods.filter((p) => p.operador_id === op.id);
         const operatorStatus = data.statuses.find((s) => s.operador_id === op.id)?.status || "Fora de turno";
@@ -109,7 +132,7 @@ const TVPanel = () => {
   }, [data, currentTime]);
 
   const getOperatorsByFocus = (focus: string) => {
-    if (focus === "Ambos") return []; // 'Ambos' is handled by IRIS and Situator
+    if (focus === "Ambos") return [];
     return onShiftOperators.filter(op => op.currentFocus === focus || (focus === 'IRIS' && op.currentFocus === 'Ambos') || (focus === 'Situator' && op.currentFocus === 'Ambos'));
   };
 
@@ -174,7 +197,6 @@ const TVPanel = () => {
       </header>
 
       <div className="grid grid-cols-3 gap-8 mb-8">
-        {/* Columns */}
         {(["IRIS", "Situator", "Apoio"] as const).map((focus) => (
           <div key={focus}>
             <div className="mb-6 flex items-center gap-3">
