@@ -43,13 +43,15 @@ const TVPanel = () => {
       if (operatorsRes.error) throw operatorsRes.error;
       if (statusRes.error) throw statusRes.error;
       if (periodsRes.error) throw periodsRes.error;
-      if (configRes.error) throw configRes.error;
+      if (configRes.error && configRes.error.code !== 'PGRST116') { // Ignore "exact one row was not found" error
+        throw configRes.error;
+      }
 
       return {
         operators: operatorsRes.data as Operator[],
         statuses: statusRes.data,
         periods: periodsRes.data,
-        config: configRes.data as Config,
+        config: configRes.data as Config | null,
       };
     },
     refetchInterval: 60000,
@@ -58,18 +60,22 @@ const TVPanel = () => {
   const onShiftOperators = useMemo(() => {
     if (!data) return [];
 
-    const { operators, statuses, periods, config } = data;
+    const { operators, statuses, periods, config: dbConfig } = data;
     const now = currentTime;
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
 
+    // **THE FIX**: Provide a fallback configuration to prevent the panel from breaking if the DB row is missing.
+    const config = dbConfig || { turno_a_trabalha_em_dias: 'pares' };
+
     const isScheduledForDate = (op: Operator, date: Date) => {
       if (!op.tipo_turno.startsWith("12x36")) return true;
-      if (!config || !op.turno_12x36_tipo) return false;
+      if (!op.turno_12x36_tipo) return false;
 
       const dayOfMonth = date.getDate();
       const isEvenDay = dayOfMonth % 2 === 0;
-      const turnAWorksOnEven = config.turno_a_trabalha_em_dias === 'pares';
+      // **THE FIX**: Make the check case-insensitive and trim whitespace for robustness.
+      const turnAWorksOnEven = config.turno_a_trabalha_em_dias.trim().toLowerCase() === 'pares';
 
       if (op.turno_12x36_tipo === 'A') return isEvenDay === turnAWorksOnEven;
       if (op.turno_12x36_tipo === 'B') return isEvenDay !== turnAWorksOnEven;
