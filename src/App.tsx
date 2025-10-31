@@ -3,7 +3,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import TVPanel from "./pages/TVPanel";
-import ManualSchedule from "./pages/ManualSchedule";
 import StatusManagement from "./pages/StatusManagement";
 import OperatorManagement from "./pages/OperatorManagement";
 import WeekendSchedule from "./pages/WeekendSchedule";
@@ -21,7 +20,6 @@ const App = () => (
         <Routes>
           <Route path="/" element={<TVPanel />} />
           <Route path="/tv-panel" element={<TVPanel />} />
-          <Route path="/manual-schedule" element={<ManualSchedule />} />
           <Route path="/weekend-schedule" element={<WeekendSchedule />} />
           <Route path="/status" element={<StatusManagement />} />
           <Route path="/operator-management" element={<OperatorManagement />} />

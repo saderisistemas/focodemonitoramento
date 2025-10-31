@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, Calendar, Activity, Users, CalendarDays } from "lucide-react";
+import { Home, Activity, Users, CalendarDays } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const Navigation = () => {
@@ -19,15 +19,6 @@ const Navigation = () => {
         >
           <Home className="w-4 h-4 mr-2" />
           Painel TV
-        </Button>
-        <Button
-          variant={isActive("/manual-schedule") ? "default" : "ghost"}
-          size="sm"
-          onClick={() => navigate("/manual-schedule")}
-          className="rounded-full"
-        >
-          <Calendar className="w-4 h-4 mr-2" />
-          Escala Manual
         </Button>
         <Button
           variant={isActive("/weekend-schedule") ? "default" : "ghost"}
