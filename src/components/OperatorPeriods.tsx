@@ -63,6 +63,16 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
     },
   });
 
+  if (!operator.horário_inicio || !operator.horário_fim) {
+    return (
+      <div className="p-4 border rounded-lg flex items-center justify-center h-full bg-secondary">
+        <p className="text-muted-foreground text-center">
+          Defina o horário de turno principal do operador para poder adicionar períodos de dedicação.
+        </p>
+      </div>
+    );
+  }
+
   const upsertMutation = useMutation({
     mutationFn: async (periodData: z.infer<typeof periodSchema>) => {
       const payload = {
