@@ -79,9 +79,7 @@ export type Database = {
       operadores: {
         Row: {
           ativo: boolean | null
-          cor: string
           created_at: string | null
-          foco_padrao: Database["public"]["Enums"]["focus_area"]
           id: string
           nome: string
           tipo_turno: Database["public"]["Enums"]["shift_type"]
@@ -89,12 +87,11 @@ export type Database = {
           horário_inicio: string | null
           horário_fim: string | null
           turno_12x36_tipo: Database["public"]["Enums"]["shift_12x36_type"] | null
+          cargo: Database["public"]["Enums"]["operator_role"]
         }
         Insert: {
           ativo?: boolean | null
-          cor: string
           created_at?: string | null
-          foco_padrao: Database["public"]["Enums"]["focus_area"]
           id?: string
           nome: string
           tipo_turno: Database["public"]["Enums"]["shift_type"]
@@ -102,12 +99,11 @@ export type Database = {
           horário_inicio?: string | null
           horário_fim?: string | null
           turno_12x36_tipo?: Database["public"]["Enums"]["shift_12x36_type"] | null
+          cargo?: Database["public"]["Enums"]["operator_role"]
         }
         Update: {
           ativo?: boolean | null
-          cor?: string
           created_at?: string | null
-          foco_padrao?: Database["public"]["Enums"]["focus_area"]
           id?: string
           nome?: string
           tipo_turno?: Database["public"]["Enums"]["shift_type"]
@@ -115,6 +111,7 @@ export type Database = {
           horário_inicio?: string | null
           horário_fim?: string | null
           turno_12x36_tipo?: Database["public"]["Enums"]["shift_12x36_type"] | null
+          cargo?: Database["public"]["Enums"]["operator_role"]
         }
         Relationships: []
       }
@@ -275,6 +272,7 @@ export type Database = {
     Enums: {
       focus_area: "IRIS" | "Situator" | "Apoio"
       operator_status: "Em operação" | "Pausa" | "Fora de turno"
+      operator_role: "MI" | "Líder de Turno" | "LMI" | "Gestor"
       shift_12x36_type: "A" | "B"
       shift_type: "12x36_diurno" | "12x36_noturno" | "6x18"
       user_role: "admin" | "leader" | "viewer"
@@ -407,6 +405,7 @@ export const Constants = {
     Enums: {
       focus_area: ["IRIS", "Situator", "Apoio"],
       operator_status: ["Em operação", "Pausa", "Fora de turno"],
+      operator_role: ["MI", "Líder de Turno", "LMI", "Gestor"],
       shift_12x36_type: ["A", "B"],
       shift_type: ["12x36_diurno", "12x36_noturno", "6x18"],
       user_role: ["admin", "leader", "viewer"],

@@ -17,7 +17,7 @@ type OperatorStatus = "Em operação" | "Pausa" | "Fora de turno";
 interface Operator {
   id: string;
   nome: string;
-  foco_padrao: string;
+  cargo: string;
   status?: OperatorStatus;
 }
 
@@ -48,7 +48,7 @@ const StatusManagement = () => {
           "Fora de turno",
       }));
 
-      setOperators(operatorsWithStatus);
+      setOperators(operatorsWithStatus as Operator[]);
     }
   };
 
@@ -120,7 +120,7 @@ const StatusManagement = () => {
                   <div className="flex flex-col">
                     <h3 className="text-xl font-bold">{operator.nome}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {operator.foco_padrao}
+                      {operator.cargo}
                     </p>
                   </div>
                   <span

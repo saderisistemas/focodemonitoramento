@@ -31,15 +31,6 @@ interface OperatorTableProps {
 }
 
 const OperatorTable = ({ operators, isLoading, onEdit, onDelete }: OperatorTableProps) => {
-  const getFocusColor = (focus: string) => {
-    switch (focus) {
-      case "IRIS": return "bg-iris text-white";
-      case "Situator": return "bg-situator text-white";
-      case "Apoio": return "bg-apoio text-white";
-      default: return "bg-secondary";
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -57,7 +48,7 @@ const OperatorTable = ({ operators, isLoading, onEdit, onDelete }: OperatorTable
           <TableRow>
             <TableHead>Nome</TableHead>
             <TableHead>Tipo de Turno</TableHead>
-            <TableHead>Foco Padrão</TableHead>
+            <TableHead>Cargo</TableHead>
             <TableHead>Horário</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
@@ -68,9 +59,7 @@ const OperatorTable = ({ operators, isLoading, onEdit, onDelete }: OperatorTable
             <TableRow key={op.id}>
               <TableCell className="font-medium">{op.nome}</TableCell>
               <TableCell>{op.tipo_turno.replace("_", " ").toUpperCase()}</TableCell>
-              <TableCell>
-                <Badge className={getFocusColor(op.foco_padrao)}>{op.foco_padrao}</Badge>
-              </TableCell>
+              <TableCell>{op.cargo}</TableCell>
               <TableCell>{op.horário_inicio} - {op.horário_fim}</TableCell>
               <TableCell>
                 <Badge variant={op.ativo ? "default" : "destructive"}>

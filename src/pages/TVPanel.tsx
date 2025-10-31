@@ -12,7 +12,7 @@ type Config = { turno_a_trabalha_em_dias: string };
 type ProcessedOperator = Operator & {
   status: Status["status"];
   isOnShift: boolean;
-  currentFocus: string;
+  currentFocus: string | null;
   currentPeriod: Period | null;
 };
 
@@ -42,7 +42,7 @@ const isOperatorWorkingToday = (operator: Operator, date: Date, config: Config) 
 
 const getCurrentShiftInfo = (operator: Operator, periods: Period[], currentTime: Date) => {
   if (!operator.horário_inicio || !operator.horário_fim) {
-    return { isOnShift: false, currentFocus: operator.foco_padrao, currentPeriod: null };
+    return { isOnShift: false, currentFocus: null, currentPeriod: null };
   }
 
   const now = currentTime;
@@ -61,7 +61,7 @@ const getCurrentShiftInfo = (operator: Operator, periods: Period[], currentTime:
     }
   }
 
-  let currentFocus: string = operator.foco_padrao;
+  let currentFocus: string | null = null;
   let currentPeriod = null;
 
   if (isOnShift) {
@@ -147,7 +147,7 @@ const TVPanel = () => {
     }
   };
 
-  const getCardClass = (focus: string) => {
+  const getCardClass = (focus: string | null) => {
     switch (focus) {
       case "IRIS":
       case "Ambos":
@@ -228,7 +228,7 @@ const TVPanel = () => {
                     </p>
                   ) : (
                      <p className="text-sm text-muted-foreground">
-                        Foco Padrão: {operator.foco_padrao}
+                        Sem foco específico definido para o horário.
                      </p>
                   )}
                 </div>

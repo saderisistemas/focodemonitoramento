@@ -36,8 +36,7 @@ const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
   tipo_turno: z.enum(["12x36_diurno", "12x36_noturno", "6x18"]),
   turno_12x36_tipo: z.enum(["A", "B"]).optional().nullable(),
-  foco_padrao: z.enum(["IRIS", "Situator", "Apoio"]),
-  cor: z.string().regex(/^#[0-9A-F]{6}$/i, { message: "Cor inválida. Use o formato hexadecimal (ex: #FF8800)." }),
+  cargo: z.enum(["MI", "Líder de Turno", "LMI", "Gestor"]),
   horário_inicio: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Formato de hora inválido (HH:MM)." }),
   horário_fim: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Formato de hora inválido (HH:MM)." }),
   ativo: z.boolean().default(true),
@@ -60,8 +59,7 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
       nome: initialData?.nome || "",
       tipo_turno: initialData?.tipo_turno || "12x36_diurno",
       turno_12x36_tipo: initialData?.turno_12x36_tipo || null,
-      foco_padrao: initialData?.foco_padrao || "IRIS",
-      cor: initialData?.cor || "#FF8800",
+      cargo: initialData?.cargo || "MI",
       horário_inicio: initialData?.horário_inicio || "06:00",
       horário_fim: initialData?.horário_fim || "18:00",
       ativo: initialData?.ativo ?? true,
@@ -88,8 +86,7 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
         nome: "",
         tipo_turno: "12x36_diurno",
         turno_12x36_tipo: null,
-        foco_padrao: "IRIS",
-        cor: "#FF8800",
+        cargo: "MI",
         horário_inicio: "06:00",
         horário_fim: "18:00",
         ativo: true,
@@ -162,20 +159,21 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
           )}
           <FormField
             control={form.control}
-            name="foco_padrao"
+            name="cargo"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Foco Padrão</FormLabel>
+                <FormLabel>Cargo</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o foco padrão" />
+                      <SelectValue placeholder="Selecione o cargo" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="IRIS">🟠 IRIS</SelectItem>
-                    <SelectItem value="Situator">🔵 Situator</SelectItem>
-                    <SelectItem value="Apoio">🟢 Apoio</SelectItem>
+                    <SelectItem value="MI">MI (Monitor Interno)</SelectItem>
+                    <SelectItem value="Líder de Turno">Líder de Turno</SelectItem>
+                    <SelectItem value="LMI">LMI (Líder de Monitor Interno)</SelectItem>
+                    <SelectItem value="Gestor">Gestor</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -214,19 +212,6 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <FormField
-            control={form.control}
-            name="cor"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Cor de Identificação</FormLabel>
-                <FormControl>
-                    <Input type="color" {...field} className="p-0 h-10"/>
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
             <FormField
             control={form.control}
             name="ativo"
