@@ -19,76 +19,7 @@ type ProcessedOperator = Operator & {
 const timeToMinutes = (time: string): number => {
   if (!time) return 0;
   const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-};
-
-const isOperatorWorkingToday = (operator: Operator, date: Date, config: Config) => {
-  if (!operator.tipo_turno.startsWith("12x36")) {
-    return true; // Always on for 6x18 shifts
-  }
-
-  const dayOfMonth = date.getDate();
-  const isEvenDay = dayOfMonth % 2 === 0;
-  const turnAWorksOnEven = config.turno_a_trabalha_em_dias === 'pares';
-
-  if (operator.turno_12x36_tipo === 'A') {
-    return isEvenDay === turnAWorksOnEven;
-  }
-  if (operator.turno_12x36_tipo === 'B') {
-    return isEvenDay !== turnAWorksOnEven;
-  }
-  return false; // Not scheduled if 12x36 but no A/B turn assigned
-};
-
-const getCurrentShiftInfo = (operator: Operator, periods: Period[], currentTime: Date) => {
-  if (!operator.horário_inicio || !operator.horário_fim) {
-    return { isOnShift: false, currentFocus: null, currentPeriod: null };
-  }
-
-  const now = currentTime;
-  const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-  const shiftStart = timeToMinutes(operator.horário_inicio);
-  const shiftEnd = timeToMinutes(operator.horário_fim);
-
-  let isOnShift = false;
-  if (shiftStart > shiftEnd) { // Night shift
-    if (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd) {
-      isOnShift = true;
-    }
-  } else { // Day shift
-    if (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd) {
-      isOnShift = true;
-    }
-  }
-
-  let currentFocus: string | null = null;
-  let currentPeriod = null;
-
-  if (isOnShift) {
-    for (const period of periods) {
-      const periodStart = timeToMinutes(period.horário_inicio);
-      const periodEnd = timeToMinutes(period.horário_fim);
-      
-      let isInPeriod = false;
-      if (periodStart > periodEnd) { // Night shift period
-        if (currentTimeInMinutes >= periodStart || currentTimeInMinutes < periodEnd) {
-          isInPeriod = true;
-        }
-      } else { // Day shift period
-        if (currentTimeInMinutes >= periodStart && currentTimeInMinutes < periodEnd) {
-          isInPeriod = true;
-        }
-      }
-
-      if (isInPeriod) {
-        currentFocus = period.foco;
-        currentPeriod = period;
-        break;
-      }
-    }
-  }
-
-  return { isOnShift, currentFocus, currentPeriod };
+  return (hours || 0) * 60 + (minutes || 0);
 };
 
 const TVPanel = () => {
@@ -99,7 +30,7 @@ const TVPanel = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const { data, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ["tv_panel_data"],
     queryFn: async () => {
       const [operatorsRes, statusRes, periodsRes, configRes] = await Promise.all([
@@ -118,7 +49,7 @@ const TVPanel = () => {
         operators: operatorsRes.data as Operator[],
         statuses: statusRes.data,
         periods: periodsRes.data,
-        config: configRes.data,
+        config: configRes.data as Config,
       };
     },
     refetchInterval: 60000,
@@ -127,25 +58,102 @@ const TVPanel = () => {
   const onShiftOperators = useMemo(() => {
     if (!data) return [];
 
-    return data.operators
-      .filter(op => isOperatorWorkingToday(op, currentTime, data.config))
-      .map((op) => {
-        const operatorPeriods = data.periods.filter((p) => p.operador_id === op.id);
-        const operatorStatus = data.statuses.find((s) => s.operador_id === op.id)?.status || "Fora de turno";
-        const shiftInfo = getCurrentShiftInfo(op, operatorPeriods, currentTime);
+    const { operators, statuses, periods, config } = data;
+    const now = currentTime;
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
 
-        return {
-          ...op,
-          status: operatorStatus,
-          ...shiftInfo,
-        };
+    const isScheduledForDate = (op: Operator, date: Date) => {
+      if (!op.tipo_turno.startsWith("12x36")) return true;
+      if (!config || !op.turno_12x36_tipo) return false;
+
+      const dayOfMonth = date.getDate();
+      const isEvenDay = dayOfMonth % 2 === 0;
+      const turnAWorksOnEven = config.turno_a_trabalha_em_dias === 'pares';
+
+      if (op.turno_12x36_tipo === 'A') return isEvenDay === turnAWorksOnEven;
+      if (op.turno_12x36_tipo === 'B') return isEvenDay !== turnAWorksOnEven;
+      return false;
+    };
+
+    return operators
+      .map((op) => {
+        const operatorStatus = statuses.find((s) => s.operador_id === op.id)?.status || "Fora de turno";
+        
+        if (!op.horário_inicio || !op.horário_fim) {
+          return { ...op, status: operatorStatus, isOnShift: false, currentFocus: null, currentPeriod: null };
+        }
+
+        const shiftStart = timeToMinutes(op.horário_inicio);
+        const shiftEnd = timeToMinutes(op.horário_fim);
+
+        let isOnShift = false;
+        if (shiftStart > shiftEnd) { // Night shift
+          if (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd) {
+            isOnShift = true;
+          }
+        } else { // Day shift
+          if (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd) {
+            isOnShift = true;
+          }
+        }
+
+        let currentFocus: string | null = null;
+        let currentPeriod: Period | null = null;
+
+        if (isOnShift) {
+          const operatorPeriods = periods.filter(p => p.operador_id === op.id);
+          for (const period of operatorPeriods) {
+            const periodStart = timeToMinutes(period.horário_inicio);
+            const periodEnd = timeToMinutes(period.horário_fim);
+            
+            let isInPeriod = false;
+            if (periodStart > periodEnd) { // Night shift period
+              if (currentTimeInMinutes >= periodStart || currentTimeInMinutes < periodEnd) {
+                isInPeriod = true;
+              }
+            } else { // Day shift period
+              if (currentTimeInMinutes >= periodStart && currentTimeInMinutes < periodEnd) {
+                isInPeriod = true;
+              }
+            }
+
+            if (isInPeriod) {
+              currentFocus = period.foco;
+              currentPeriod = period;
+              break;
+            }
+          }
+        }
+        
+        return { ...op, status: operatorStatus, isOnShift, currentFocus, currentPeriod };
       })
-      .filter((op) => op.isOnShift);
+      .filter((op) => {
+        if (!op.isOnShift) return false;
+
+        const shiftStart = timeToMinutes(op.horário_inicio!);
+        const shiftEnd = timeToMinutes(op.horário_fim!);
+        const isNightShift = shiftStart > shiftEnd;
+
+        if (isNightShift) {
+          if (currentTimeInMinutes >= shiftStart) {
+            return isScheduledForDate(op, now);
+          } else {
+            return isScheduledForDate(op, yesterday);
+          }
+        } else {
+          return isScheduledForDate(op, now);
+        }
+      });
   }, [data, currentTime]);
 
   const getOperatorsByFocus = (focus: string) => {
-    if (focus === "Ambos") return [];
-    return onShiftOperators.filter(op => op.currentFocus === focus || (focus === 'IRIS' && op.currentFocus === 'Ambos') || (focus === 'Situator' && op.currentFocus === 'Ambos'));
+    return onShiftOperators.filter(op => {
+      if (!op.currentFocus) return false;
+      if (op.currentFocus === focus) return true;
+      if (op.currentFocus === "Ambos" && (focus === "IRIS" || focus === "Situator")) return true;
+      return false;
+    });
   };
 
   const getStatusIcon = (status?: ProcessedOperator["status"]) => {
