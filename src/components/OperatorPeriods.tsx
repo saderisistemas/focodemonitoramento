@@ -6,7 +6,7 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Operator } from "@/pages/OperatorManagement";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +49,12 @@ const periodSchema = z.object({
   observação: z.string().optional(),
 });
 
+const timeToMinutes = (time: string): number => {
+  if (!time) return 0;
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
 export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => {
   const queryClient = useQueryClient();
   const [editingPeriod, setEditingPeriod] = useState<Period | null>(null);
@@ -75,7 +81,7 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
 
   const upsertMutation = useMutation({
     mutationFn: async (periodData: z.infer<typeof periodSchema>) => {
-      const payload = {
+      const payload: TablesInsert<"operador_periodos"> = {
         id: editingPeriod?.id,
         operador_id: operator.id,
         horário_inicio: periodData.horário_inicio,
@@ -112,47 +118,43 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
   });
 
   const onSubmit = (values: z.infer<typeof periodSchema>) => {
-    const mainStart = operator.horário_inicio!;
-    const mainEnd = operator.horário_fim!;
-    const periodStart = values.horário_inicio;
-    const periodEnd = values.horário_fim;
+    const mainStartMins = timeToMinutes(operator.horário_inicio!);
+    const mainEndMins = timeToMinutes(operator.horário_fim!);
+    const periodStartMins = timeToMinutes(values.horário_inicio);
+    const periodEndMins = timeToMinutes(values.horário_fim);
 
-    const isNightShift = mainStart > mainEnd;
-    const periodCrossesMidnight = periodStart > periodEnd;
-
-    // Basic time validation
-    if (!periodCrossesMidnight && periodStart >= periodEnd) {
-      toast.error("Horário inválido", { description: "O horário de início deve ser anterior ao de fim." });
-      return;
+    if (periodEndMins !== 0 && periodEndMins <= periodStartMins) {
+        toast.error("Horário inválido", { description: "O horário de início deve ser anterior ao de fim." });
+        return;
     }
 
-    // Advanced boundary validation
-    let isOutsideShift = false;
-    if (isNightShift) {
-      // For a night shift, the period is invalid if it's in the "off" time.
-      // The "off" time is between mainEnd and mainStart (e.g., 06:00 to 22:00).
-      if (!periodCrossesMidnight && (periodStart >= mainEnd && periodEnd <= mainStart)) {
-        isOutsideShift = true;
-      } else if (periodCrossesMidnight && (periodStart < mainStart || periodEnd > mainEnd)) {
-        // If the period itself crosses midnight, it must be contained within the main shift's times.
-        isOutsideShift = true;
-      }
-    } else {
-      // For a day shift, the logic is simple.
-      if (periodCrossesMidnight || periodStart < mainStart || periodEnd > mainEnd) {
-        isOutsideShift = true;
-      }
-    }
+    // --- Boundary and Overlap Validation using a normalized timeline ---
+    let normMainEndMins = mainEndMins < mainStartMins ? mainEndMins + 1440 : mainEndMins;
 
-    if (isOutsideShift) {
+    const normalizePeriod = (start: number, end: number) => {
+        let normStart = start;
+        let normEnd = end;
+        if (normEnd < normStart) { normEnd += 1440; }
+        if (mainEndMins < mainStartMins && normStart < mainStartMins) {
+            normStart += 1440;
+            normEnd += 1440;
+        }
+        return { start: normStart, end: normEnd };
+    };
+
+    const newPeriod = normalizePeriod(periodStartMins, periodEndMins);
+
+    if (newPeriod.start < mainStartMins || newPeriod.end > normMainEndMins) {
       toast.error("Fora do turno", { description: "O período deve estar dentro do turno principal do operador." });
       return;
     }
 
-    // Overlap check
     const isOverlapping = periods
       .filter(p => p.id !== editingPeriod?.id)
-      .some(p => values.horário_inicio < p.horário_fim && values.horário_fim > p.horário_inicio);
+      .some(p => {
+        const existingPeriod = normalizePeriod(timeToMinutes(p.horário_inicio), timeToMinutes(p.horário_fim));
+        return newPeriod.start < existingPeriod.end && newPeriod.end > existingPeriod.start;
+      });
 
     if (isOverlapping) {
       toast.error("Sobreposição de horários", { description: "Este período conflita com um já existente." });
