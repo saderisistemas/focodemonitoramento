@@ -6,11 +6,9 @@ import { Tables } from "@/integrations/supabase/types";
 
 type Operator = Tables<"operadores"> & { turno_12x36_tipo?: "A" | "B" | null };
 type Period = Tables<"operador_periodos">;
-type Status = Tables<"status_realtime">;
 type Config = { turno_a_trabalha_em_dias: string };
 
 type ProcessedOperator = Operator & {
-  status: Status["status"];
   isOnShift: boolean;
   currentFocus: string | null;
   currentPeriod: Period | null;
@@ -33,15 +31,13 @@ const TVPanel = () => {
   const { data } = useQuery({
     queryKey: ["tv_panel_data"],
     queryFn: async () => {
-      const [operatorsRes, statusRes, periodsRes, configRes] = await Promise.all([
+      const [operatorsRes, periodsRes, configRes] = await Promise.all([
         supabase.from("operadores").select("*").eq("ativo", true),
-        supabase.from("status_realtime").select("*"),
         supabase.from("operador_periodos").select("*"),
         supabase.from("configuracao_escala").select("*").eq("id", 1).single(),
       ]);
 
       if (operatorsRes.error) throw operatorsRes.error;
-      if (statusRes.error) throw statusRes.error;
       if (periodsRes.error) throw periodsRes.error;
       if (configRes.error && configRes.error.code !== 'PGRST116') { // Ignore "exact one row was not found" error
         throw configRes.error;
@@ -49,7 +45,6 @@ const TVPanel = () => {
 
       return {
         operators: operatorsRes.data as Operator[],
-        statuses: statusRes.data,
         periods: periodsRes.data,
         config: configRes.data as Config | null,
       };
@@ -60,12 +55,11 @@ const TVPanel = () => {
   const onShiftOperators = useMemo(() => {
     if (!data) return [];
 
-    const { operators, statuses, periods, config: dbConfig } = data;
+    const { operators, periods, config: dbConfig } = data;
     const now = currentTime;
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
 
-    // **THE FIX**: Provide a fallback configuration to prevent the panel from breaking if the DB row is missing.
     const config = dbConfig || { turno_a_trabalha_em_dias: 'pares' };
 
     const isScheduledForDate = (op: Operator, date: Date) => {
@@ -74,7 +68,6 @@ const TVPanel = () => {
 
       const dayOfMonth = date.getDate();
       const isEvenDay = dayOfMonth % 2 === 0;
-      // **THE FIX**: Make the check case-insensitive and trim whitespace for robustness.
       const turnAWorksOnEven = config.turno_a_trabalha_em_dias.trim().toLowerCase() === 'pares';
 
       if (op.turno_12x36_tipo === 'A') return isEvenDay === turnAWorksOnEven;
@@ -84,10 +77,8 @@ const TVPanel = () => {
 
     return operators
       .map((op) => {
-        const operatorStatus = statuses.find((s) => s.operador_id === op.id)?.status || "Fora de turno";
-        
         if (!op.horário_inicio || !op.horário_fim) {
-          return { ...op, status: operatorStatus, isOnShift: false, currentFocus: null, currentPeriod: null };
+          return { ...op, isOnShift: false, currentFocus: null, currentPeriod: null };
         }
 
         const shiftStart = timeToMinutes(op.horário_inicio);
@@ -135,7 +126,7 @@ const TVPanel = () => {
           }
         }
         
-        return { ...op, status: operatorStatus, isOnShift, currentFocus, currentPeriod };
+        return { ...op, isOnShift, currentFocus, currentPeriod };
       })
       .filter((op) => {
         if (!op.isOnShift) return false;
@@ -170,15 +161,8 @@ const TVPanel = () => {
     });
   };
 
-  const getStatusIcon = (status?: ProcessedOperator["status"]) => {
-    switch (status) {
-      case "Em operação":
-        return <div className="w-4 h-4 rounded-full status-active pulse-glow" />;
-      case "Pausa":
-        return <div className="w-4 h-4 rounded-full status-pause pulse-glow" />;
-      default:
-        return <div className="w-4 h-4 rounded-full status-off" />;
-    }
+  const getStatusIcon = () => {
+    return <div className="w-4 h-4 rounded-full status-active pulse-glow" />;
   };
 
   const getCardClass = (focus: string | null) => {
@@ -255,7 +239,7 @@ const TVPanel = () => {
                         ({operator.horário_inicio} - {operator.horário_fim})
                       </strong>
                     </h3>
-                    {getStatusIcon(operator.status)}
+                    {getStatusIcon()}
                   </div>
                   {operator.currentPeriod ? (
                     <p className="text-sm text-iris font-semibold">
