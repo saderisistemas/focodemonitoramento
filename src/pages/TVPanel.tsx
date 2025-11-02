@@ -84,7 +84,7 @@ const TVPanel = () => {
 
       if (activeManualShift) {
         processedOperatorIds.add(op.id);
-        let currentFocus = "Apoio";
+        let currentFocus = activeManualShift.foco || "Apoio";
         const relevantPeriods = manualPeriods.filter(p => p.escala_manual_id === activeManualShift!.id);
         for (const period of relevantPeriods) {
           const pStart = timeToMinutes(period.horario_inicio);
@@ -115,14 +115,16 @@ const TVPanel = () => {
       let isOnShift = false;
       let shiftStart = 0, shiftEnd = 0;
       let displayStartTime = op.horário_inicio, displayEndTime = op.horário_fim;
+      const isWeekday = dayOfWeek > 0 && dayOfWeek < 6;
 
+      // Automatic logic for 6x18 (weekdays and weekends)
       if (op.tipo_turno === '6x18') {
         let relevantStart = null, relevantEnd = null;
         if (dayOfWeek === 6 && op.horario_inicio_sabado && op.horario_fim_sabado) {
           [relevantStart, relevantEnd] = [op.horario_inicio_sabado, op.horario_fim_sabado];
         } else if (dayOfWeek === 0 && op.horario_inicio_domingo && op.horario_fim_domingo) {
           [relevantStart, relevantEnd] = [op.horario_inicio_domingo, op.horario_fim_domingo];
-        } else if (dayOfWeek > 0 && dayOfWeek < 6 && op.dias_semana?.includes(currentDayAbbr)) {
+        } else if (isWeekday && op.dias_semana?.includes(currentDayAbbr)) {
           [relevantStart, relevantEnd] = [op.horário_inicio, op.horário_fim];
         }
         if (relevantStart && relevantEnd) {
@@ -134,7 +136,9 @@ const TVPanel = () => {
             ? (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd)
             : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
         }
-      } else if (op.tipo_turno.startsWith('12x36') && op.horário_inicio && op.horário_fim) {
+      } 
+      // Automatic logic for 12x36 (ONLY on weekdays)
+      else if (isWeekday && op.tipo_turno.startsWith('12x36') && op.horário_inicio && op.horário_fim) {
         shiftStart = timeToMinutes(op.horário_inicio);
         shiftEnd = timeToMinutes(op.horário_fim);
         const isWithinTime = (shiftStart > shiftEnd)
