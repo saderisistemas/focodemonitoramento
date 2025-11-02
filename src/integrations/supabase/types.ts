@@ -76,42 +76,104 @@ export type Database = {
           },
         ]
       }
+      escala_manual_periodos: {
+        Row: {
+          id: string
+          escala_manual_id: string
+          horario_inicio: string
+          horario_fim: string
+          foco: Database["public"]["Enums"]["focus_area"]
+          observacao: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          escala_manual_id: string
+          horario_inicio: string
+          horario_fim: string
+          foco: Database["public"]["Enums"]["focus_area"]
+          observacao?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          escala_manual_id?: string
+          horario_inicio?: string
+          horario_fim?: string
+          foco?: Database["public"]["Enums"]["focus_area"]
+          observacao?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escala_manual_periodos_escala_manual_id_fkey"
+            columns: ["escala_manual_id"]
+            isOneToOne: false
+            referencedRelation: "escala_manual"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operadores: {
         Row: {
           ativo: boolean | null
+          cargo: Database["public"]["Enums"]["operator_role"]
           created_at: string | null
+          dias_semana: string | null
+          horario_fim_domingo: string | null
+          horario_fim_sabado: string | null
+          horario_inicio_domingo: string | null
+          horario_inicio_sabado: string | null
+          horário_fim: string | null
+          horário_inicio: string | null
           id: string
           nome: string
           tipo_turno: Database["public"]["Enums"]["shift_type"]
+          turno_12x36_tipo:
+            | Database["public"]["Enums"]["shift_12x36_type"]
+            | null
           updated_at: string | null
-          horário_inicio: string | null
-          horário_fim: string | null
-          turno_12x36_tipo: Database["public"]["Enums"]["shift_12x36_type"] | null
-          cargo: Database["public"]["Enums"]["operator_role"]
         }
         Insert: {
           ativo?: boolean | null
+          cargo?: Database["public"]["Enums"]["operator_role"]
           created_at?: string | null
+          dias_semana?: string | null
+          horario_fim_domingo?: string | null
+          horario_fim_sabado?: string | null
+          horario_inicio_domingo?: string | null
+          horario_inicio_sabado?: string | null
+          horário_fim?: string | null
+          horário_inicio?: string | null
           id?: string
           nome: string
           tipo_turno: Database["public"]["Enums"]["shift_type"]
+          turno_12x36_tipo?:
+            | Database["public"]["Enums"]["shift_12x36_type"]
+            | null
           updated_at?: string | null
-          horário_inicio?: string | null
-          horário_fim?: string | null
-          turno_12x36_tipo?: Database["public"]["Enums"]["shift_12x36_type"] | null
-          cargo?: Database["public"]["Enums"]["operator_role"]
         }
         Update: {
           ativo?: boolean | null
+          cargo?: Database["public"]["Enums"]["operator_role"]
           created_at?: string | null
+          dias_semana?: string | null
+          horario_fim_domingo?: string | null
+          horario_fim_sabado?: string | null
+          horario_inicio_domingo?: string | null
+          horario_inicio_sabado?: string | null
+          horário_fim?: string | null
+          horário_inicio?: string | null
           id?: string
           nome?: string
           tipo_turno?: Database["public"]["Enums"]["shift_type"]
+          turno_12x36_tipo?:
+            | Database["public"]["Enums"]["shift_12x36_type"]
+            | null
           updated_at?: string | null
-          horário_inicio?: string | null
-          horário_fim?: string | null
-          turno_12x36_tipo?: Database["public"]["Enums"]["shift_12x36_type"] | null
-          cargo?: Database["public"]["Enums"]["operator_role"]
         }
         Relationships: []
       }

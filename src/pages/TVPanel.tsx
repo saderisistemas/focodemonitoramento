@@ -3,16 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
+import { format } from "date-fns";
 
-type Operator = Tables<"operadores"> & { 
-  turno_12x36_tipo?: "A" | "B" | null,
-  dias_semana?: string | null,
-  horario_inicio_sabado?: string | null,
-  horario_fim_sabado?: string | null,
-  horario_inicio_domingo?: string | null,
-  horario_fim_domingo?: string | null,
-};
+type Operator = Tables<"operadores">;
 type Period = Tables<"operador_periodos">;
+type ManualSchedule = Tables<"escala_manual">;
+type ManualPeriod = Tables<"escala_manual_periodos">;
 type Config = { turno_a_trabalha_em_dias: string };
 
 const timeToMinutes = (time: string): number => {
@@ -30,24 +26,25 @@ const TVPanel = () => {
   }, []);
 
   const { data } = useQuery({
-    queryKey: ["tv_panel_data"],
+    queryKey: ["tv_panel_data_v2"],
     queryFn: async () => {
-      const [operatorsRes, periodsRes, configRes] = await Promise.all([
+      const todayStr = format(new Date(), "yyyy-MM-dd");
+      const yesterdayStr = format(new Date(Date.now() - 86400000), "yyyy-MM-dd");
+
+      const [operatorsRes, periodsRes, configRes, manualSchedulesRes, manualPeriodsRes] = await Promise.all([
         supabase.from("operadores").select("*").eq("ativo", true),
         supabase.from("operador_periodos").select("*"),
         supabase.from("configuracao_escala").select("*").eq("id", 1).single(),
+        supabase.from("escala_manual").select("*").in("data", [todayStr, yesterdayStr]),
+        supabase.from("escala_manual_periodos").select("*"),
       ]);
 
-      if (operatorsRes.error) throw operatorsRes.error;
-      if (periodsRes.error) throw periodsRes.error;
-      if (configRes.error && configRes.error.code !== 'PGRST116') {
-        throw configRes.error;
-      }
-
       return {
-        operators: operatorsRes.data as Operator[],
-        periods: periodsRes.data,
+        operators: (operatorsRes.data || []) as Operator[],
+        periods: (periodsRes.data || []) as Period[],
         config: configRes.data as Config | null,
+        manualSchedules: (manualSchedulesRes.data || []) as ManualSchedule[],
+        manualPeriods: (manualPeriodsRes.data || []) as ManualPeriod[],
       };
     },
     refetchInterval: 60000,
@@ -55,101 +52,115 @@ const TVPanel = () => {
 
   const onShiftOperators = useMemo(() => {
     if (!data) return [];
-    const { operators, periods, config: dbConfig } = data;
+    const { operators, periods, config, manualSchedules, manualPeriods } = data;
     const now = currentTime;
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const dayOfWeek = now.getDay();
     const dayMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
     const currentDayAbbr = dayMap[dayOfWeek];
-    const config = dbConfig || { turno_a_trabalha_em_dias: 'pares' };
+    const dbConfig = config || { turno_a_trabalha_em_dias: 'pares' };
 
+    const processedOperatorIds = new Set<string>();
+    const finalOnShiftList = [];
+
+    // 1. Process manual schedules first
+    for (const op of operators) {
+      const todayManual = manualSchedules.find(s => s.operador_id === op.id && s.data === format(now, "yyyy-MM-dd"));
+      const yesterdayManual = manualSchedules.find(s => s.operador_id === op.id && s.data === format(yesterday, "yyyy-MM-dd"));
+      
+      let activeManualShift = null;
+      if (todayManual) {
+        const start = timeToMinutes(todayManual.horario_inicio);
+        const end = timeToMinutes(todayManual.horario_fim);
+        if (start <= end && currentTimeInMinutes >= start && currentTimeInMinutes < end) activeManualShift = todayManual;
+        if (start > end && currentTimeInMinutes >= start) activeManualShift = todayManual;
+      }
+      if (!activeManualShift && yesterdayManual) {
+        const start = timeToMinutes(yesterdayManual.horario_inicio);
+        const end = timeToMinutes(yesterdayManual.horario_fim);
+        if (start > end && currentTimeInMinutes < end) activeManualShift = yesterdayManual;
+      }
+
+      if (activeManualShift) {
+        processedOperatorIds.add(op.id);
+        let currentFocus = "Apoio";
+        const relevantPeriods = manualPeriods.filter(p => p.escala_manual_id === activeManualShift!.id);
+        for (const period of relevantPeriods) {
+          const pStart = timeToMinutes(period.horario_inicio);
+          const pEnd = timeToMinutes(period.horario_fim);
+          if (currentTimeInMinutes >= pStart && currentTimeInMinutes < pEnd) {
+            currentFocus = period.foco;
+            break;
+          }
+        }
+        finalOnShiftList.push({ ...op, isOnShift: true, currentFocus, displayStartTime: activeManualShift.horario_inicio, displayEndTime: activeManualShift.horario_fim });
+      }
+    }
+
+    // 2. Process automatic schedules for remaining operators
     const isScheduledFor12x36 = (op: Operator, date: Date) => {
       if (!op.turno_12x36_tipo) return false;
       const dayOfMonth = date.getDate();
       const isEvenDay = dayOfMonth % 2 === 0;
-      const turnAWorksOnEven = config.turno_a_trabalha_em_dias.trim().toLowerCase() === 'pares';
+      const turnAWorksOnEven = dbConfig.turno_a_trabalha_em_dias.trim().toLowerCase() === 'pares';
       if (op.turno_12x36_tipo === 'A') return isEvenDay === turnAWorksOnEven;
       if (op.turno_12x36_tipo === 'B') return isEvenDay !== turnAWorksOnEven;
       return false;
     };
 
-    return operators
-      .map((op) => {
-        let isOnShift = false;
-        let shiftStart = 0;
-        let shiftEnd = 0;
-        let displayStartTime = op.horário_inicio;
-        let displayEndTime = op.horário_fim;
+    for (const op of operators) {
+      if (processedOperatorIds.has(op.id)) continue;
 
-        // Logic for 6x18 shifts
-        if (op.tipo_turno === '6x18') {
-          let relevantStartTime: string | null | undefined = null;
-          let relevantEndTime: string | null | undefined = null;
+      let isOnShift = false;
+      let shiftStart = 0, shiftEnd = 0;
+      let displayStartTime = op.horário_inicio, displayEndTime = op.horário_fim;
 
-          if (dayOfWeek === 6 && op.horario_inicio_sabado && op.horario_fim_sabado) { // Saturday
-            relevantStartTime = op.horario_inicio_sabado;
-            relevantEndTime = op.horario_fim_sabado;
-          } else if (dayOfWeek === 0 && op.horario_inicio_domingo && op.horario_fim_domingo) { // Sunday
-            relevantStartTime = op.horario_inicio_domingo;
-            relevantEndTime = op.horario_fim_domingo;
-          } else if (dayOfWeek > 0 && dayOfWeek < 6) { // Weekdays
-            if (op.dias_semana?.includes(currentDayAbbr)) {
-              relevantStartTime = op.horário_inicio;
-              relevantEndTime = op.horário_fim;
-            }
-          }
+      if (op.tipo_turno === '6x18') {
+        let relevantStart = null, relevantEnd = null;
+        if (dayOfWeek === 6 && op.horario_inicio_sabado && op.horario_fim_sabado) {
+          [relevantStart, relevantEnd] = [op.horario_inicio_sabado, op.horario_fim_sabado];
+        } else if (dayOfWeek === 0 && op.horario_inicio_domingo && op.horario_fim_domingo) {
+          [relevantStart, relevantEnd] = [op.horario_inicio_domingo, op.horario_fim_domingo];
+        } else if (dayOfWeek > 0 && dayOfWeek < 6 && op.dias_semana?.includes(currentDayAbbr)) {
+          [relevantStart, relevantEnd] = [op.horário_inicio, op.horário_fim];
+        }
+        if (relevantStart && relevantEnd) {
+          shiftStart = timeToMinutes(relevantStart);
+          shiftEnd = timeToMinutes(relevantEnd);
+          displayStartTime = relevantStart;
+          displayEndTime = relevantEnd;
+          isOnShift = (shiftStart > shiftEnd)
+            ? (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd)
+            : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
+        }
+      } else if (op.tipo_turno.startsWith('12x36') && op.horário_inicio && op.horário_fim) {
+        shiftStart = timeToMinutes(op.horário_inicio);
+        shiftEnd = timeToMinutes(op.horário_fim);
+        const isWithinTime = (shiftStart > shiftEnd)
+          ? (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd)
+          : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
+        if (isWithinTime) {
+          const dateToCheck = (shiftStart > shiftEnd && currentTimeInMinutes < shiftEnd) ? yesterday : now;
+          isOnShift = isScheduledFor12x36(op, dateToCheck);
+        }
+      }
 
-          if (relevantStartTime && relevantEndTime) {
-            shiftStart = timeToMinutes(relevantStartTime);
-            shiftEnd = timeToMinutes(relevantEndTime);
-            displayStartTime = relevantStartTime;
-            displayEndTime = relevantEndTime;
-            isOnShift = (shiftStart > shiftEnd)
-              ? (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd)
-              : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
-          }
-        } 
-        // Logic for 12x36 shifts
-        else if (op.tipo_turno.startsWith('12x36')) {
-          if (op.horário_inicio && op.horário_fim) {
-            shiftStart = timeToMinutes(op.horário_inicio);
-            shiftEnd = timeToMinutes(op.horário_fim);
-            const isWithinTime = (shiftStart > shiftEnd)
-              ? (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd)
-              : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
-
-            if (isWithinTime) {
-              const isNightShift = shiftStart > shiftEnd;
-              const dateToCheck = (isNightShift && currentTimeInMinutes < shiftEnd) ? yesterday : now;
-              isOnShift = isScheduledFor12x36(op, dateToCheck);
-            }
+      if (isOnShift) {
+        let currentFocus = "Apoio";
+        const operatorPeriods = periods.filter(p => p.operador_id === op.id);
+        for (const period of operatorPeriods) {
+          const pStart = timeToMinutes(period.horário_inicio);
+          const pEnd = timeToMinutes(period.horário_fim);
+          if ((pStart > pEnd) ? (currentTimeInMinutes >= pStart || currentTimeInMinutes < pEnd) : (currentTimeInMinutes >= pStart && currentTimeInMinutes < pEnd)) {
+            currentFocus = period.foco;
+            break;
           }
         }
-
-        let currentFocus: string | null = null;
-        let currentPeriod: Period | null = null;
-
-        if (isOnShift) {
-          const operatorPeriods = periods.filter(p => p.operador_id === op.id);
-          for (const period of operatorPeriods) {
-            const periodStart = timeToMinutes(period.horário_inicio);
-            const periodEnd = timeToMinutes(period.horário_fim);
-            let isInPeriod = (periodStart > periodEnd)
-              ? (currentTimeInMinutes >= periodStart || currentTimeInMinutes < periodEnd)
-              : (currentTimeInMinutes >= periodStart && currentTimeInMinutes < periodEnd);
-            if (isInPeriod) {
-              currentFocus = period.foco;
-              currentPeriod = period;
-              break;
-            }
-          }
-          if (!currentFocus) currentFocus = "Apoio";
-        }
-        
-        return { ...op, isOnShift, currentFocus, currentPeriod, displayStartTime, displayEndTime };
-      })
-      .filter((op) => op.isOnShift);
+        finalOnShiftList.push({ ...op, isOnShift: true, currentFocus, displayStartTime, displayEndTime });
+      }
+    }
+    return finalOnShiftList;
   }, [data, currentTime]);
 
   const getOperatorsByFocus = (focus: string) => {
@@ -207,9 +218,6 @@ const TVPanel = () => {
                 <div className="status-indicator status-active pulse-glow" />
                 <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
                 <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
-                <p className="text-[1rem] text-white mt-1 transition-transform duration-300 group-hover:scale-105">
-                  Foco: {operator.currentPeriod?.foco || "Apoio"}
-                </p>
               </div>
             ))}
           </div>
@@ -228,9 +236,6 @@ const TVPanel = () => {
                 <div className="status-indicator status-active pulse-glow" />
                 <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
                 <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
-                <p className="text-[1rem] text-white mt-1 transition-transform duration-300 group-hover:scale-105">
-                  Foco: {operator.currentPeriod?.foco || "Apoio"}
-                </p>
               </div>
             ))}
           </div>
@@ -249,9 +254,6 @@ const TVPanel = () => {
                 <div className="status-indicator status-active pulse-glow" />
                 <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
                 <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
-                <p className="text-[1rem] text-white mt-1 transition-transform duration-300 group-hover:scale-105">
-                  Foco: {operator.currentPeriod?.foco || "Apoio"}
-                </p>
               </div>
             ))}
           </div>
