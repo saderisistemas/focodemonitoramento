@@ -4,46 +4,44 @@
 
 @layer base {
   :root {
-    /* TV Dark Theme - Professional */
-    --background: 240 10% 5%; /* #0D0D10 */
-    --foreground: 0 0% 90%; /* #E6E6E6 */
+    /* Refined TV Dark Theme */
+    --background: 220 11% 5%; /* #0C0D10 */
+    --foreground: 0 0% 95%; /* #F2F2F2 */
 
-    --card: 0 0% 100% / 0.04; /* rgba(255,255,255,0.04) */
-    --card-foreground: 0 0% 90%;
+    --card: 0 0% 100% / 0.04;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 240 10% 5%;
-    --popover-foreground: 0 0% 90%;
+    --popover: 220 11% 5%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 25 100% 55%; /* IRIS #FF7A1A */
+    --primary: 25 100% 55%; /* IRIS */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 90%;
+    --secondary-foreground: 0 0% 95%;
 
     --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 69%; /* #AFAFAF */
+    --muted-foreground: 220 9% 74%; /* #B9BCC2 */
 
     --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 90%;
+    --accent-foreground: 0 0% 95%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 100% / 0.06; /* rgba(255,255,255,0.06) */
-    --input: 0 0% 100% / 0.06;
+    --border: 0 0% 100% / 0.07;
+    --input: 0 0% 100% / 0.07;
     --ring: 25 100% 55%; /* IRIS */
 
     --radius: 1rem;
 
-    /* System Focus Colors */
+    /* Adjusted System Focus Colors */
     --iris: 25 100% 55%; /* #FF7A1A */
-    --situator: 207 100% 58%; /* #29A4FF */
-    --apoio: 157 100% 33%; /* #00A868 */
-
-    /* Status Colors */
-    --status-active: 120 100% 35%; /* Green */
-    --status-pause: 45 100% 50%; /* Yellow */
-    --status-off: 0 84% 60%; /* Red */
+    --iris-light: 30 100% 84%; /* #FFD9B0 */
+    --situator: 208 88% 53%; /* #1E97F0 */
+    --situator-light: 210 100% 91%; /* #CFE7FF */
+    --apoio: 155 100% 34%; /* #00AD68 */
+    --apoio-light: 150 80% 81%; /* #A6F5CE */
   }
 }
 
@@ -67,13 +65,13 @@
 
 @layer components {
   .gradient-iris {
-    background-image: linear-gradient(135deg, #FF7A1A 0%, #C76418 100%);
+    background-image: linear-gradient(145deg, #FF7A1A, #D66716);
   }
   .gradient-situator {
-    background-image: linear-gradient(135deg, #29A4FF 0%, #1E7DB8 100%);
+    background-image: linear-gradient(145deg, #1E97F0, #1468A8);
   }
   .gradient-apoio {
-    background-image: linear-gradient(135deg, #00A868 0%, #007E54 100%);
+    background-image: linear-gradient(145deg, #00AD68, #007E50);
   }
 
   .status-indicator {
@@ -85,19 +83,22 @@
     @apply bg-green-500 text-green-500;
   }
 
-  /* Pulse Animation */
   @keyframes pulse-glow {
-    0%, 100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.7;
-      transform: scale(1.1);
-    }
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
   }
 
   .pulse-glow {
     animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+    opacity: 0;
   }
 }

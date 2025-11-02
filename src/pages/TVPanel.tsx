@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Bird } from "lucide-react";
+import { Users } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 
 type Operator = Tables<"operadores"> & { turno_12x36_tipo?: "A" | "B" | null };
@@ -126,40 +126,44 @@ const TVPanel = () => {
   }, [currentTime]);
 
   return (
-    <div className="min-h-screen flex flex-col p-5 pb-20 font-sans">
+    <div className="min-h-screen flex flex-col p-6 pb-24 font-sans">
       <header className="w-full">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-[2.8rem] font-semibold tracking-[2px]">Central Patrimonium</h1>
-            <p className="text-[1.1rem] text-[#A0A0A0]">Escala em Tempo Real</p>
+            <h1 className="text-[2.8rem] font-semibold text-white">Central Patrimonium</h1>
+            <p className="text-[1rem] text-[#B1B1B1]">Escala em Tempo Real</p>
           </div>
           <div className="text-right">
-            <div className="font-mono text-[1.3rem] text-[#E6E6E6] mb-2">
+            <div className="font-mono text-[1.4rem] font-medium text-[#F6F6F6] mb-2">
               {currentTime.toLocaleTimeString("pt-BR")}
             </div>
             <div className="flex items-center justify-end gap-2 text-[0.9rem]">
               <Users size={18} className="text-[#8FC1FF]" />
               <span className="text-[#C9DEFF]">{currentLeader}</span>
-              <span className="text-[#9C9C9C]">
+              <span className="text-[#A0A0A0]">
                 ({currentTime.getHours() >= 6 && currentTime.getHours() < 18 ? "Diurno" : "Noturno"})
               </span>
             </div>
           </div>
         </div>
-        <div className="h-[3px] bg-iris my-2 mb-5" />
+        <div className="h-[2px] bg-iris mt-2 mb-4" />
       </header>
 
-      <main className="flex-grow grid grid-cols-[35fr_1px_30fr_1px_35fr] gap-5">
+      <main className="flex-grow grid grid-cols-[35fr_1px_30fr_1px_35fr] gap-6">
         {/* IRIS Column */}
         <div className="flex flex-col items-center">
-          <h2 className="text-2xl font-bold text-iris mb-4">🟠 IRIS</h2>
-          <div className="w-full space-y-3">
-            {getOperatorsByFocus("IRIS").map((operator) => (
-              <div key={operator.id} className="relative gradient-iris border border-iris rounded-4xl p-4 shadow-lg transition-all duration-250 ease-in-out hover:scale-103 hover:shadow-white/10">
+          <h2 className="text-2xl font-bold text-white mb-4"><span className="text-iris">🟠</span> IRIS</h2>
+          <div className="w-full space-y-3.5">
+            {getOperatorsByFocus("IRIS").map((operator, index) => (
+              <div 
+                key={operator.id} 
+                className="relative group gradient-iris border border-white/[.07] rounded-4xl px-5 py-4 shadow-[0_3px_10px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_12px_rgba(255,255,255,0.10)] animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <div className="status-indicator status-active pulse-glow" />
-                <h3 className="text-[1.4rem] font-semibold text-white">{operator.nome}</h3>
-                <p className="text-[1.0rem] text-[#BEBEBE]">{operator.horário_inicio} - {operator.horário_fim}</p>
-                <p className="text-[0.95rem] font-semibold text-white mt-1">
+                <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
+                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.horário_inicio} - {operator.horário_fim}</p>
+                <p className="text-[1rem] text-white mt-1 transition-transform duration-300 group-hover:scale-105">
                   Foco: {operator.currentPeriod?.foco || "Apoio"}
                 </p>
               </div>
@@ -169,14 +173,18 @@ const TVPanel = () => {
         <div className="w-full h-full bg-border" />
         {/* Situator Column */}
         <div className="flex flex-col items-center">
-          <h2 className="text-2xl font-bold text-situator mb-4">🔵 Situator</h2>
-          <div className="w-full space-y-3">
-            {getOperatorsByFocus("Situator").map((operator) => (
-              <div key={operator.id} className="relative gradient-situator border border-situator rounded-4xl p-4 shadow-lg transition-all duration-250 ease-in-out hover:scale-103 hover:shadow-white/10">
+          <h2 className="text-2xl font-bold text-white mb-4"><span className="text-situator">🔵</span> Situator</h2>
+          <div className="w-full space-y-3.5">
+            {getOperatorsByFocus("Situator").map((operator, index) => (
+              <div 
+                key={operator.id} 
+                className="relative group gradient-situator border border-white/[.07] rounded-4xl px-5 py-4 shadow-[0_3px_10px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_12px_rgba(255,255,255,0.10)] animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <div className="status-indicator status-active pulse-glow" />
-                <h3 className="text-[1.4rem] font-semibold text-white">{operator.nome}</h3>
-                <p className="text-[1.0rem] text-[#BEBEBE]">{operator.horário_inicio} - {operator.horário_fim}</p>
-                <p className="text-[0.95rem] font-semibold text-white mt-1">
+                <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
+                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.horário_inicio} - {operator.horário_fim}</p>
+                <p className="text-[1rem] text-white mt-1 transition-transform duration-300 group-hover:scale-105">
                   Foco: {operator.currentPeriod?.foco || "Apoio"}
                 </p>
               </div>
@@ -186,14 +194,18 @@ const TVPanel = () => {
         <div className="w-full h-full bg-border" />
         {/* Apoio Column */}
         <div className="flex flex-col items-center">
-          <h2 className="text-2xl font-bold text-apoio mb-4">🟢 Apoio/Supervisão</h2>
-          <div className="w-full space-y-3">
-            {getOperatorsByFocus("Apoio").map((operator) => (
-              <div key={operator.id} className="relative gradient-apoio border border-apoio rounded-4xl p-4 shadow-lg transition-all duration-250 ease-in-out hover:scale-103 hover:shadow-white/10">
+          <h2 className="text-2xl font-bold text-white mb-4"><span className="text-apoio">🟢</span> Apoio/Supervisão</h2>
+          <div className="w-full space-y-3.5">
+            {getOperatorsByFocus("Apoio").map((operator, index) => (
+              <div 
+                key={operator.id} 
+                className="relative group gradient-apoio border border-white/[.07] rounded-4xl px-5 py-4 shadow-[0_3px_10px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_12px_rgba(255,255,255,0.10)] animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <div className="status-indicator status-active pulse-glow" />
-                <h3 className="text-[1.4rem] font-semibold text-white">{operator.nome}</h3>
-                <p className="text-[1.0rem] text-[#BEBEBE]">{operator.horário_inicio} - {operator.horário_fim}</p>
-                <p className="text-[0.95rem] font-semibold text-white mt-1">
+                <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
+                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.horário_inicio} - {operator.horário_fim}</p>
+                <p className="text-[1rem] text-white mt-1 transition-transform duration-300 group-hover:scale-105">
                   Foco: {operator.currentPeriod?.foco || "Apoio"}
                 </p>
               </div>
@@ -202,8 +214,8 @@ const TVPanel = () => {
         </div>
       </main>
 
-      <footer className="text-center italic text-[0.9rem] text-[#9E9E9E] py-2.5">
-        <p><Bird className="inline-block mr-2" size={16} />Central Patrimonium – Supervisão contínua para um ambiente seguro e equilibrado.</p>
+      <footer className="text-center italic text-[0.9rem] text-[#9C9C9C] py-3 border-t border-white/[.05] mt-auto">
+        <p>🕊️ Central Patrimonium – Supervisão contínua para um ambiente seguro e equilibrado.</p>
       </footer>
     </div>
   );
