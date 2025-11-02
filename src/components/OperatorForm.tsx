@@ -100,6 +100,12 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
   const handleSubmit = (values: OperatorFormData) => {
     const dataToSubmit: any = { ...values, id: initialData?.id };
 
+    // Convert empty strings for optional time fields to null, as the DB expects null, not ''
+    if (dataToSubmit.horario_inicio_sabado === '') dataToSubmit.horario_inicio_sabado = null;
+    if (dataToSubmit.horario_fim_sabado === '') dataToSubmit.horario_fim_sabado = null;
+    if (dataToSubmit.horario_inicio_domingo === '') dataToSubmit.horario_inicio_domingo = null;
+    if (dataToSubmit.horario_fim_domingo === '') dataToSubmit.horario_fim_domingo = null;
+
     if (values.tipo_turno === '6x18') {
         dataToSubmit.dias_semana = values.dias_semana ? values.dias_semana.join(',') : null;
         dataToSubmit.turno_12x36_tipo = null;
