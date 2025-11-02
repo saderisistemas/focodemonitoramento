@@ -190,11 +190,8 @@ const TVPanel = () => {
   return (
     <div className="min-h-screen flex flex-col p-6 pb-24 font-sans">
       <header className="w-full">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-[2.8rem] font-semibold text-white">Central Patrimonium</h1>
-            <p className="text-[1rem] text-[#B1B1B1]">Escala em Tempo Real</p>
-          </div>
+        <div className="flex justify-between items-center">
+          <img src="/logo.jpeg" alt="Patrimonium Logo" className="h-20" />
           <div className="text-right">
             <div className="font-mono text-[1.4rem] font-medium text-[#F6F6F6] mb-2">
               {currentTime.toLocaleTimeString("pt-BR")}
@@ -208,7 +205,7 @@ const TVPanel = () => {
             </div>
           </div>
         </div>
-        <div className="h-[2px] bg-iris mt-2 mb-4" />
+        <div className="h-[2px] bg-iris mt-4 mb-4" />
       </header>
 
       <main className="flex-grow grid grid-cols-[35fr_1px_30fr_1px_35fr] gap-6">
