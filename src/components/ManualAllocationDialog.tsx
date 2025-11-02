@@ -147,6 +147,7 @@ export const ManualAllocationDialog = ({
     onSuccess: () => {
       toast.success("Alocação salva com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["manual_schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["tv_panel_data_v2"] });
       onClose();
     },
     onError: (error) => toast.error("Erro ao salvar alocação", { description: error.message }),
@@ -168,6 +169,7 @@ export const ManualAllocationDialog = ({
     onSuccess: () => {
       toast.success("Período adicionado!");
       refetchPeriods();
+      queryClient.invalidateQueries({ queryKey: ["tv_panel_data_v2"] });
       periodForm.reset({ foco: "Apoio", horario_inicio: "", horario_fim: "", observacao: "" });
     },
     onError: (error) => toast.error("Erro ao salvar período", { description: error.message }),
@@ -181,6 +183,7 @@ export const ManualAllocationDialog = ({
     onSuccess: () => {
       toast.success("Período removido.");
       refetchPeriods();
+      queryClient.invalidateQueries({ queryKey: ["tv_panel_data_v2"] });
     },
     onError: (error) => toast.error("Erro ao remover período", { description: error.message }),
   });

@@ -95,6 +95,7 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
     onSuccess: () => {
       toast.success("Período salvo com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["periods", operator.id] });
+      queryClient.invalidateQueries({ queryKey: ["tv_panel_data_v2"] });
       form.reset();
       setEditingPeriod(null);
     },
@@ -111,6 +112,7 @@ export const OperatorPeriods = ({ operator, periods }: OperatorPeriodsProps) => 
     onSuccess: () => {
       toast.success("Período excluído!");
       queryClient.invalidateQueries({ queryKey: ["periods", operator.id] });
+      queryClient.invalidateQueries({ queryKey: ["tv_panel_data_v2"] });
     },
     onError: (error) => {
       toast.error("Erro ao excluir", { description: error.message });

@@ -68,6 +68,7 @@ const OperatorManagement = () => {
     },
     onSuccess: (newOrUpdatedOperator) => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
+      queryClient.invalidateQueries({ queryKey: ["tv_panel_data_v2"] });
       toast.success(selectedOperator ? "Operador atualizado!" : "Operador criado com sucesso!");
       setSelectedOperator(newOrUpdatedOperator as Operator);
     },
@@ -84,6 +85,7 @@ const OperatorManagement = () => {
     },
     onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["operators"] });
+      queryClient.invalidateQueries({ queryKey: ["tv_panel_data_v2"] });
       toast.success("Operador excluído!");
       if (selectedOperator?.id === deletedId) {
         setSelectedOperator(null);
