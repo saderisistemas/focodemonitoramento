@@ -1,18 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, Users } from "lucide-react";
+import { Users, Bird } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 
 type Operator = Tables<"operadores"> & { turno_12x36_tipo?: "A" | "B" | null };
 type Period = Tables<"operador_periodos">;
 type Config = { turno_a_trabalha_em_dias: string };
-
-type ProcessedOperator = Operator & {
-  isOnShift: boolean;
-  currentFocus: string | null;
-  currentPeriod: Period | null;
-};
 
 const timeToMinutes = (time: string): number => {
   if (!time) return 0;
@@ -39,7 +33,7 @@ const TVPanel = () => {
 
       if (operatorsRes.error) throw operatorsRes.error;
       if (periodsRes.error) throw periodsRes.error;
-      if (configRes.error && configRes.error.code !== 'PGRST116') { // Ignore "exact one row was not found" error
+      if (configRes.error && configRes.error.code !== 'PGRST116') {
         throw configRes.error;
       }
 
@@ -54,22 +48,18 @@ const TVPanel = () => {
 
   const onShiftOperators = useMemo(() => {
     if (!data) return [];
-
     const { operators, periods, config: dbConfig } = data;
     const now = currentTime;
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-
     const config = dbConfig || { turno_a_trabalha_em_dias: 'pares' };
 
     const isScheduledForDate = (op: Operator, date: Date) => {
       if (!op.tipo_turno.startsWith("12x36")) return true;
       if (!op.turno_12x36_tipo) return false;
-
       const dayOfMonth = date.getDate();
       const isEvenDay = dayOfMonth % 2 === 0;
       const turnAWorksOnEven = config.turno_a_trabalha_em_dias.trim().toLowerCase() === 'pares';
-
       if (op.turno_12x36_tipo === 'A') return isEvenDay === turnAWorksOnEven;
       if (op.turno_12x36_tipo === 'B') return isEvenDay !== turnAWorksOnEven;
       return false;
@@ -80,20 +70,11 @@ const TVPanel = () => {
         if (!op.horário_inicio || !op.horário_fim) {
           return { ...op, isOnShift: false, currentFocus: null, currentPeriod: null };
         }
-
         const shiftStart = timeToMinutes(op.horário_inicio);
         const shiftEnd = timeToMinutes(op.horário_fim);
-
-        let isOnShift = false;
-        if (shiftStart > shiftEnd) { // Night shift
-          if (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd) {
-            isOnShift = true;
-          }
-        } else { // Day shift
-          if (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd) {
-            isOnShift = true;
-          }
-        }
+        let isOnShift = (shiftStart > shiftEnd)
+          ? (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd)
+          : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
 
         let currentFocus: string | null = null;
         let currentPeriod: Period | null = null;
@@ -103,81 +84,38 @@ const TVPanel = () => {
           for (const period of operatorPeriods) {
             const periodStart = timeToMinutes(period.horário_inicio);
             const periodEnd = timeToMinutes(period.horário_fim);
-            
-            let isInPeriod = false;
-            if (periodStart > periodEnd) { // Night shift period
-              if (currentTimeInMinutes >= periodStart || currentTimeInMinutes < periodEnd) {
-                isInPeriod = true;
-              }
-            } else { // Day shift period
-              if (currentTimeInMinutes >= periodStart && currentTimeInMinutes < periodEnd) {
-                isInPeriod = true;
-              }
-            }
-
+            let isInPeriod = (periodStart > periodEnd)
+              ? (currentTimeInMinutes >= periodStart || currentTimeInMinutes < periodEnd)
+              : (currentTimeInMinutes >= periodStart && currentTimeInMinutes < periodEnd);
             if (isInPeriod) {
               currentFocus = period.foco;
               currentPeriod = period;
               break;
             }
           }
-          if (!currentFocus) {
-            currentFocus = "Apoio";
-          }
+          if (!currentFocus) currentFocus = "Apoio";
         }
-        
         return { ...op, isOnShift, currentFocus, currentPeriod };
       })
       .filter((op) => {
         if (!op.isOnShift) return false;
-
         const shiftStart = timeToMinutes(op.horário_inicio!);
-        const shiftEnd = timeToMinutes(op.horário_fim!);
-        const isNightShift = shiftStart > shiftEnd;
-
+        const isNightShift = shiftStart > timeToMinutes(op.horário_fim!);
         if (isNightShift) {
-          if (currentTimeInMinutes >= shiftStart) {
-            return isScheduledForDate(op, now);
-          } else {
-            return isScheduledForDate(op, yesterday);
-          }
-        } else {
-          return isScheduledForDate(op, now);
+          return (currentTimeInMinutes >= shiftStart) ? isScheduledForDate(op, now) : isScheduledForDate(op, yesterday);
         }
+        return isScheduledForDate(op, now);
       });
   }, [data, currentTime]);
 
   const getOperatorsByFocus = (focus: string) => {
     return onShiftOperators.filter(op => {
       if (!op.currentFocus) return false;
-      
       const isEqual = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
-
       if (isEqual(op.currentFocus, focus)) return true;
-      
       if (isEqual(op.currentFocus, "Ambos") && (isEqual(focus, "IRIS") || isEqual(focus, "Situator"))) return true;
-      
       return false;
     });
-  };
-
-  const getStatusIcon = () => {
-    return <div className="w-4 h-4 rounded-full status-active pulse-glow" />;
-  };
-
-  const getCardClass = (focus: string | null) => {
-    const normalizedFocus = (focus || "").toLowerCase();
-    switch (normalizedFocus) {
-      case "iris":
-      case "ambos":
-        return "operator-card-iris";
-      case "situator":
-        return "operator-card-situator";
-      case "apoio":
-        return "operator-card-apoio";
-      default:
-        return "bg-secondary";
-    }
   };
 
   const currentLeader = useMemo(() => {
@@ -187,82 +125,85 @@ const TVPanel = () => {
     return "Santana";
   }, [currentTime]);
 
-  const shift = useMemo(() => {
-    const hour = currentTime.getHours();
-    if (hour >= 6 && hour < 18) return { name: "Diurno", color: "border-iris" };
-    return { name: "Noturno", color: "border-situator" };
-  }, [currentTime]);
-
   return (
-    <div className="min-h-screen bg-background p-8">
-      <header className={`mb-8 border-b-4 ${shift.color} pb-6`}>
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen flex flex-col p-5 font-sans">
+      <header className="w-full">
+        <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-5xl font-bold mb-2">Central Patrimonium</h1>
-            <p className="text-2xl text-muted-foreground">Escala em Tempo Real</p>
+            <h1 className="text-[2.8rem] font-semibold tracking-[2px]">Central Patrimonium</h1>
+            <p className="text-[1.1rem] text-[#A0A0A0]">Escala em Tempo Real</p>
           </div>
-          <div className="text-right space-y-2">
-            <div className="flex items-center gap-3 justify-end text-3xl font-bold">
-              <Clock className="w-8 h-8" />
+          <div className="text-right">
+            <div className="font-mono text-[1.3rem] text-[#E6E6E6] mb-2">
               {currentTime.toLocaleTimeString("pt-BR")}
             </div>
-            <div className="flex items-center gap-3 justify-end text-xl text-muted-foreground">
-              <Users className="w-6 h-6" />
-              Líder: {currentLeader}
+            <div className="flex items-center justify-end gap-2 text-[0.9rem]">
+              <Users size={18} className="text-[#8FC1FF]" />
+              <span className="text-[#C9DEFF]">{currentLeader}</span>
+              <span className="text-[#9C9C9C]">
+                ({currentTime.getHours() >= 6 && currentTime.getHours() < 18 ? "Diurno" : "Noturno"})
+              </span>
             </div>
-            <div className="text-lg text-muted-foreground">Turno: {shift.name}</div>
           </div>
         </div>
+        <div className="h-[3px] bg-iris my-2 mb-5" />
       </header>
 
-      <div className="grid grid-cols-3 gap-8 mb-8">
-        {(["IRIS", "Situator", "Apoio"] as const).map((focus) => (
-          <div key={focus}>
-            <div className="mb-6 flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full bg-${focus.toLowerCase()}`} />
-              <h2 className={`text-3xl font-bold text-${focus.toLowerCase()}`}>
-                {focus === "IRIS" && "🟠 IRIS"}
-                {focus === "Situator" && "🔵 Situator"}
-                {focus === "Apoio" && "🟢 Apoio/Supervisão"}
-              </h2>
-            </div>
-            <div className="space-y-4">
-              {getOperatorsByFocus(focus).map((operator) => (
-                <div
-                  key={operator.id}
-                  className={`${getCardClass(operator.currentFocus)} rounded-2xl p-6 transition-all duration-300`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-2xl font-bold">
-                      {operator.nome}{" "}
-                      <strong className="text-base font-normal text-muted-foreground">
-                        ({operator.horário_inicio} - {operator.horário_fim})
-                      </strong>
-                    </h3>
-                    {getStatusIcon()}
-                  </div>
-                  {operator.currentPeriod ? (
-                    <p className="text-sm text-iris font-semibold">
-                      Foco: {operator.currentPeriod.foco} ({operator.currentPeriod.horário_inicio} - {operator.currentPeriod.horário_fim})
-                    </p>
-                  ) : (
-                     <p className="text-sm text-muted-foreground">
-                        Foco: Apoio (Padrão)
-                     </p>
-                  )}
-                </div>
-              ))}
-            </div>
+      <main className="flex-grow grid grid-cols-[35fr_1px_30fr_1px_35fr] gap-5">
+        {/* IRIS Column */}
+        <div className="flex flex-col items-center">
+          <h2 className="text-2xl font-bold text-iris mb-4">🟠 IRIS</h2>
+          <div className="w-full space-y-3">
+            {getOperatorsByFocus("IRIS").map((operator) => (
+              <div key={operator.id} className="relative gradient-iris border border-iris rounded-4xl p-4 shadow-lg transition-all duration-250 ease-in-out hover:scale-103 hover:shadow-white/10">
+                <div className="status-indicator status-active pulse-glow" />
+                <h3 className="text-[1.4rem] font-semibold text-white">{operator.nome}</h3>
+                <p className="text-[1.0rem] text-[#BEBEBE]">{operator.horário_inicio} - {operator.horário_fim}</p>
+                <p className="text-[0.95rem] font-semibold text-white mt-1">
+                  Foco: {operator.currentPeriod?.foco || "Apoio"}
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+        <div className="w-full h-full bg-border" />
+        {/* Situator Column */}
+        <div className="flex flex-col items-center">
+          <h2 className="text-2xl font-bold text-situator mb-4">🔵 Situator</h2>
+          <div className="w-full space-y-3">
+            {getOperatorsByFocus("Situator").map((operator) => (
+              <div key={operator.id} className="relative gradient-situator border border-situator rounded-4xl p-4 shadow-lg transition-all duration-250 ease-in-out hover:scale-103 hover:shadow-white/10">
+                <div className="status-indicator status-active pulse-glow" />
+                <h3 className="text-[1.4rem] font-semibold text-white">{operator.nome}</h3>
+                <p className="text-[1.0rem] text-[#BEBEBE]">{operator.horário_inicio} - {operator.horário_fim}</p>
+                <p className="text-[0.95rem] font-semibold text-white mt-1">
+                  Foco: {operator.currentPeriod?.foco || "Apoio"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="w-full h-full bg-border" />
+        {/* Apoio Column */}
+        <div className="flex flex-col items-center">
+          <h2 className="text-2xl font-bold text-apoio mb-4">🟢 Apoio/Supervisão</h2>
+          <div className="w-full space-y-3">
+            {getOperatorsByFocus("Apoio").map((operator) => (
+              <div key={operator.id} className="relative gradient-apoio border border-apoio rounded-4xl p-4 shadow-lg transition-all duration-250 ease-in-out hover:scale-103 hover:shadow-white/10">
+                <div className="status-indicator status-active pulse-glow" />
+                <h3 className="text-[1.4rem] font-semibold text-white">{operator.nome}</h3>
+                <p className="text-[1.0rem] text-[#BEBEBE]">{operator.horário_inicio} - {operator.horário_fim}</p>
+                <p className="text-[0.95rem] font-semibold text-white mt-1">
+                  Foco: {operator.currentPeriod?.foco || "Apoio"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
 
-      <footer className="border-t border-border pt-6">
-        <p className="text-center text-lg text-muted-foreground leading-relaxed max-w-4xl mx-auto">
-          <strong>Central Patrimonium</strong> – Supervisão contínua. Mudanças
-          fazem parte do crescimento; o objetivo é aprimorar a rotina e
-          garantir equilíbrio operacional.
-        </p>
+      <footer className="text-center italic text-[0.9rem] text-[#9E9E9E] py-2.5">
+        <p><Bird className="inline-block mr-2" size={16} />Central Patrimonium – Supervisão contínua para um ambiente seguro e equilibrado.</p>
       </footer>
     </div>
   );

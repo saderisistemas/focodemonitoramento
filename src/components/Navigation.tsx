@@ -1,52 +1,45 @@
 import { Button } from "@/components/ui/button";
 import { Home, Users, CalendarDays, Cog } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
+  const navItems = [
+    { path: "/tv-panel", label: "Painel TV", icon: Home },
+    { path: "/weekend-schedule", label: "Fim de Semana", icon: CalendarDays },
+    { path: "/operator-management", label: "Operadores", icon: Users },
+    { path: "/scale-config", label: "Configurações", icon: Cog },
+  ];
+
+  // Oculta a navegação no painel da TV para uma visualização limpa
+  if (location.pathname === "/tv-panel" || location.pathname === "/") {
+    return null;
+  }
 
   return (
-    <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-card border border-border rounded-full px-6 py-3 shadow-lg z-50">
-      <div className="flex items-center gap-2">
-        <Button
-          variant={isActive("/tv-panel") ? "default" : "ghost"}
-          size="sm"
-          onClick={() => navigate("/tv-panel")}
-          className="rounded-full"
-        >
-          <Home className="w-4 h-4 mr-2" />
-          Painel TV
-        </Button>
-        <Button
-          variant={isActive("/weekend-schedule") ? "default" : "ghost"}
-          size="sm"
-          onClick={() => navigate("/weekend-schedule")}
-          className="rounded-full"
-        >
-          <CalendarDays className="w-4 h-4 mr-2" />
-          Fim de Semana
-        </Button>
-        <Button
-          variant={isActive("/operator-management") ? "default" : "ghost"}
-          size="sm"
-          onClick={() => navigate("/operator-management")}
-          className="rounded-full"
-        >
-          <Users className="w-4 h-4 mr-2" />
-          Operadores
-        </Button>
-        <Button
-          variant={isActive("/scale-config") ? "default" : "ghost"}
-          size="sm"
-          onClick={() => navigate("/scale-config")}
-          className="rounded-full"
-        >
-          <Cog className="w-4 h-4 mr-2" />
-          Configurações
-        </Button>
+    <nav className="fixed bottom-0 left-0 right-0 bg-[#181818] border-t border-white/10 z-50">
+      <div className="flex items-center justify-center gap-4 p-2">
+        {navItems.map((item) => {
+          const isActive = location.pathname.startsWith(item.path);
+          return (
+            <Button
+              key={item.path}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(item.path)}
+              className={cn(
+                "flex flex-col items-center h-auto p-2 rounded-md text-[#D0D0D0] hover:bg-white/10 text-base",
+                isActive && "text-iris"
+              )}
+            >
+              <item.icon className="w-6 h-6 text-[#EAEAEA]" />
+              <span className="text-xs mt-1">{item.label}</span>
+            </Button>
+          );
+        })}
       </div>
     </nav>
   );
