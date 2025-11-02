@@ -192,6 +192,11 @@ const TVPanel = () => {
       <header className="w-full">
         <div className="flex justify-between items-center">
           <img src="/logo.png" alt="Patrimonium Logo" className="h-20" />
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-white tracking-wider">
+              Foco de Monitoramento - REAL TIME
+            </h1>
+          </div>
           <div className="text-right">
             <div className="font-mono text-[1.4rem] font-medium text-[#F6F6F6] mb-2">
               {currentTime.toLocaleTimeString("pt-BR")}
