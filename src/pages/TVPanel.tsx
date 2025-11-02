@@ -9,7 +9,7 @@ type Operator = Tables<"operadores">;
 type Period = Tables<"operador_periodos">;
 type ManualSchedule = Tables<"escala_manual">;
 type ManualPeriod = Tables<"escala_manual_periodos">;
-type Config = { turno_a_trabalha_em_dias: string };
+type Config = Tables<"configuracao_escala">;
 
 const timeToMinutes = (time: string): number => {
   if (!time) return 0;
@@ -183,21 +183,24 @@ const TVPanel = () => {
   const currentLeader = useMemo(() => {
     if (!data || !data.config) return "Carregando...";
 
+    const { config } = data;
     const hour = currentTime.getHours();
 
     // Night shift (19:00 - 06:59)
     if (hour >= 19 || hour < 7) {
-      return "Lucas Santana";
+      return config.lider_noturno_nome || "Líder Noturno";
     }
 
     // Day shift (07:00 - 18:59)
     const dayOfMonth = currentTime.getDate();
     const isEvenDay = dayOfMonth % 2 === 0;
-    const turnAWorksOnEven = data.config.turno_a_trabalha_em_dias.trim().toLowerCase() === 'pares';
+    const turnAWorksOnEven = config.turno_a_trabalha_em_dias.trim().toLowerCase() === 'pares';
     
     const isTurnAOnDuty = isEvenDay === turnAWorksOnEven;
 
-    return isTurnAOnDuty ? "Angélica" : "Alan";
+    return isTurnAOnDuty 
+        ? (config.lider_diurno_a_nome || "Líder Turno A") 
+        : (config.lider_diurno_b_nome || "Líder Turno B");
   }, [currentTime, data]);
 
   return (

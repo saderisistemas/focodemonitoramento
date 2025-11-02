@@ -18,14 +18,23 @@ export type Database = {
         Row: {
           id: number
           turno_a_trabalha_em_dias: string
+          lider_diurno_a_nome: string | null
+          lider_diurno_b_nome: string | null
+          lider_noturno_nome: string | null
         }
         Insert: {
           id?: number
           turno_a_trabalha_em_dias: string
+          lider_diurno_a_nome?: string | null
+          lider_diurno_b_nome?: string | null
+          lider_noturno_nome?: string | null
         }
         Update: {
           id?: number
           turno_a_trabalha_em_dias?: string
+          lider_diurno_a_nome?: string | null
+          lider_diurno_b_nome?: string | null
+          lider_noturno_nome?: string | null
         }
         Relationships: []
       }
