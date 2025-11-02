@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, nextSaturday, nextSunday, isSaturday, isSunday, getDate } from "date-fns";
+import { format, nextSaturday, nextSunday, isSaturday, isSunday, getDate, previousSaturday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,12 +56,39 @@ const manualAllocationSchema = z.object({
 });
 
 const WeekendSchedule = () => {
-  const [saturday, sunday] = useMemo(() => {
+  const {
+    currentSaturday,
+    currentSunday,
+    nextWkSaturday,
+    nextWkSunday,
+  } = useMemo(() => {
     const today = new Date();
-    return [nextSaturday(today), nextSunday(today)];
+    let cs, csu;
+    if (isSaturday(today)) {
+      cs = today;
+      csu = nextSunday(today);
+    } else if (isSunday(today)) {
+      csu = today;
+      cs = previousSaturday(today);
+    } else {
+      cs = nextSaturday(today);
+      csu = nextSunday(today);
+    }
+    return {
+      currentSaturday: cs,
+      currentSunday: csu,
+      nextWkSaturday: addDays(cs, 7),
+      nextWkSunday: addDays(csu, 7),
+    };
   }, []);
 
-  const queryKey = ["manual_schedule", format(saturday, "yyyy-MM-dd")];
+  const datesToFetch = [
+    format(currentSaturday, "yyyy-MM-dd"),
+    format(currentSunday, "yyyy-MM-dd"),
+    format(nextWkSaturday, "yyyy-MM-dd"),
+    format(nextWkSunday, "yyyy-MM-dd"),
+  ];
+  const queryKey = ["manual_schedule", ...datesToFetch];
 
   const { data: config } = useQuery({
     queryKey: ["scale_config"],
@@ -108,7 +135,7 @@ const WeekendSchedule = () => {
       const { data, error } = await supabase
         .from("escala_manual")
         .select("*, operadores(*)")
-        .in("data", [format(saturday, "yyyy-MM-dd"), format(sunday, "yyyy-MM-dd")]);
+        .in("data", datesToFetch);
       if (error) throw error;
       return data as ManualScheduleEntry[];
     },
@@ -116,7 +143,7 @@ const WeekendSchedule = () => {
 
   const form = useForm<z.infer<typeof manualAllocationSchema>>({
     resolver: zodResolver(manualAllocationSchema),
-    defaultValues: { data: format(saturday, "yyyy-MM-dd") },
+    defaultValues: { data: format(currentSaturday, "yyyy-MM-dd") },
   });
 
   const allocationMutation = useMutation({
@@ -127,7 +154,7 @@ const WeekendSchedule = () => {
     onSuccess: () => {
       toast.success("Alocação salva com sucesso!");
       refetchManualSchedule();
-      form.reset({ data: format(saturday, "yyyy-MM-dd") });
+      form.reset({ data: format(currentSaturday, "yyyy-MM-dd") });
     },
     onError: (error) => toast.error("Erro ao salvar", { description: error.message }),
   });
@@ -164,9 +191,17 @@ const WeekendSchedule = () => {
     return [...auto, ...manual];
   };
 
-  const saturdaySchedule = getScheduleForDay(saturday);
-  const sundaySchedule = getScheduleForDay(sunday);
-  const combinedSchedule = [...saturdaySchedule.map(s => ({...s, date: saturday})), ...sundaySchedule.map(s => ({...s, date: sunday}))];
+  const currentSaturdaySchedule = getScheduleForDay(currentSaturday);
+  const currentSundaySchedule = getScheduleForDay(currentSunday);
+  const nextSaturdaySchedule = getScheduleForDay(nextWkSaturday);
+  const nextSundaySchedule = getScheduleForDay(nextWkSunday);
+
+  const combinedSchedule = [
+    ...currentSaturdaySchedule.map(s => ({...s, date: currentSaturday})),
+    ...currentSundaySchedule.map(s => ({...s, date: currentSunday})),
+    ...nextSaturdaySchedule.map(s => ({...s, date: nextWkSaturday})),
+    ...nextSundaySchedule.map(s => ({...s, date: nextWkSunday})),
+  ];
 
   return (
     <div className="min-h-screen bg-background p-8 pb-20">
@@ -177,7 +212,7 @@ const WeekendSchedule = () => {
             Controle e visualização completa da escala operacional do final de semana.
           </p>
           <div className="text-lg font-semibold text-iris">
-            Próximo sábado: {format(saturday, "dd/MM/yyyy", { locale: ptBR })} • Próximo domingo: {format(sunday, "dd/MM/yyyy", { locale: ptBR })}
+            Visualizando de {format(currentSaturday, "dd/MM")} a {format(nextWkSunday, "dd/MM/yyyy", { locale: ptBR })}
           </div>
         </div>
 
@@ -190,11 +225,13 @@ const WeekendSchedule = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Data</Label>
-                  <Select onValueChange={(val) => form.setValue('data', val)} defaultValue={format(saturday, "yyyy-MM-dd")}>
+                  <Select onValueChange={(val) => form.setValue('data', val)} defaultValue={format(currentSaturday, "yyyy-MM-dd")}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={format(saturday, "yyyy-MM-dd")}>Sábado ({format(saturday, "dd/MM")})</SelectItem>
-                      <SelectItem value={format(sunday, "yyyy-MM-dd")}>Domingo ({format(sunday, "dd/MM")})</SelectItem>
+                      <SelectItem value={format(currentSaturday, "yyyy-MM-dd")}>Sábado ({format(currentSaturday, "dd/MM")})</SelectItem>
+                      <SelectItem value={format(currentSunday, "yyyy-MM-dd")}>Domingo ({format(currentSunday, "dd/MM")})</SelectItem>
+                      <SelectItem value={format(nextWkSaturday, "yyyy-MM-dd")}>Próximo Sábado ({format(nextWkSaturday, "dd/MM")})</SelectItem>
+                      <SelectItem value={format(nextWkSunday, "yyyy-MM-dd")}>Próximo Domingo ({format(nextWkSunday, "dd/MM")})</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -240,35 +277,72 @@ const WeekendSchedule = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card>
-            <CardHeader><CardTitle>Sábado ({format(saturday, "dd/MM")})</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {saturdaySchedule.map(op => (
-                <div key={op.id + op.type} className="p-4 rounded-lg bg-secondary border border-border">
-                  <div className="flex justify-between items-center">
-                    <p className="font-bold text-lg">{op.nome}</p>
-                    <Badge variant={op.type === 'Auto' ? 'default' : 'secondary'}>{op.type}</Badge>
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Este Final de Semana</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card>
+              <CardHeader><CardTitle>Sábado ({format(currentSaturday, "dd/MM")})</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {currentSaturdaySchedule.map(op => (
+                  <div key={op.id + op.type} className="p-4 rounded-lg bg-secondary border border-border">
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold text-lg">{op.nome}</p>
+                      <Badge variant={op.type === 'Auto' ? 'default' : 'secondary'}>{op.type}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{op.horário_inicio} - {op.horário_fim}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{op.horário_inicio} - {op.horário_fim}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle>Domingo ({format(sunday, "dd/MM")})</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {sundaySchedule.map(op => (
-                <div key={op.id + op.type} className="p-4 rounded-lg bg-secondary border border-border">
-                  <div className="flex justify-between items-center">
-                    <p className="font-bold text-lg">{op.nome}</p>
-                    <Badge variant={op.type === 'Auto' ? 'default' : 'secondary'}>{op.type}</Badge>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Domingo ({format(currentSunday, "dd/MM")})</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {currentSundaySchedule.map(op => (
+                  <div key={op.id + op.type} className="p-4 rounded-lg bg-secondary border border-border">
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold text-lg">{op.nome}</p>
+                      <Badge variant={op.type === 'Auto' ? 'default' : 'secondary'}>{op.type}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{op.horário_inicio} - {op.horário_fim}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{op.horário_inicio} - {op.horário_fim}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Próximo Final de Semana</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card>
+              <CardHeader><CardTitle>Sábado ({format(nextWkSaturday, "dd/MM")})</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {nextSaturdaySchedule.map(op => (
+                  <div key={op.id + op.type} className="p-4 rounded-lg bg-secondary border border-border">
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold text-lg">{op.nome}</p>
+                      <Badge variant={op.type === 'Auto' ? 'default' : 'secondary'}>{op.type}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{op.horário_inicio} - {op.horário_fim}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Domingo ({format(nextWkSunday, "dd/MM")})</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {nextSundaySchedule.map(op => (
+                  <div key={op.id + op.type} className="p-4 rounded-lg bg-secondary border border-border">
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold text-lg">{op.nome}</p>
+                      <Badge variant={op.type === 'Auto' ? 'default' : 'secondary'}>{op.type}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{op.horário_inicio} - {op.horário_fim}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <Card>
