@@ -181,11 +181,24 @@ const TVPanel = () => {
   };
 
   const currentLeader = useMemo(() => {
+    if (!data || !data.config) return "Carregando...";
+
     const hour = currentTime.getHours();
-    if (hour >= 6 && hour < 14) return "Angélica";
-    if (hour >= 14 && hour < 22) return "Alan";
-    return "Santana";
-  }, [currentTime]);
+
+    // Night shift (19:00 - 06:59)
+    if (hour >= 19 || hour < 7) {
+      return "Lucas Santana";
+    }
+
+    // Day shift (07:00 - 18:59)
+    const dayOfMonth = currentTime.getDate();
+    const isEvenDay = dayOfMonth % 2 === 0;
+    const turnAWorksOnEven = data.config.turno_a_trabalha_em_dias.trim().toLowerCase() === 'pares';
+    
+    const isTurnAOnDuty = isEvenDay === turnAWorksOnEven;
+
+    return isTurnAOnDuty ? "Angélica" : "Alan";
+  }, [currentTime, data]);
 
   return (
     <div className="min-h-screen flex flex-col p-6 pb-24 font-sans">
@@ -205,7 +218,7 @@ const TVPanel = () => {
               <Users size={18} className="text-[#8FC1FF]" />
               <span className="text-[#C9DEFF]">{currentLeader}</span>
               <span className="text-[#A0A0A0]">
-                ({currentTime.getHours() >= 6 && currentTime.getHours() < 18 ? "Diurno" : "Noturno"})
+                ({currentTime.getHours() >= 7 && currentTime.getHours() < 19 ? "Diurno" : "Noturno"})
               </span>
             </div>
           </div>
