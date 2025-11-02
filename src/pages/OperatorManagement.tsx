@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import OperatorForm, { OperatorFormData } from "@/components/OperatorForm";
+import OperatorForm from "@/components/OperatorForm";
 import OperatorTable from "@/components/OperatorTable";
 import OperatorPeriods from "@/components/OperatorPeriods";
 import ShiftTimeline from "@/components/ShiftTimeline";
@@ -13,6 +13,11 @@ import { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 export type Operator = Tables<"operadores"> & {
   turno_12x36_tipo?: "A" | "B" | null;
+  dias_semana?: string | null;
+  horario_inicio_sabado?: string | null;
+  horario_fim_sabado?: string | null;
+  horario_inicio_domingo?: string | null;
+  horario_fim_domingo?: string | null;
 };
 export type Period = Tables<"operador_periodos">;
 
@@ -35,7 +40,7 @@ const OperatorManagement = () => {
   });
 
   // Fetch periods for the selected operator
-  const { data: periods, isLoading: isLoadingPeriods } = useQuery({
+  const { data: periods } = useQuery({
     queryKey: ["periods", selectedOperator?.id],
     queryFn: async () => {
       if (!selectedOperator?.id) return [];

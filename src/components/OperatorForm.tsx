@@ -31,22 +31,40 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import WeekdaySelector from "./WeekdaySelector";
+
+const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const optionalTime = z.string().regex(timeRegex, { message: "Formato inválido." }).optional().nullable().or(z.literal(''));
 
 const formSchema = z.object({
   nome: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
   tipo_turno: z.enum(["12x36_diurno", "12x36_noturno", "6x18"]),
   turno_12x36_tipo: z.enum(["A", "B"]).optional().nullable(),
   cargo: z.enum(["MI", "Líder de Turno", "LMI", "Gestor"]),
-  horário_inicio: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Formato de hora inválido (HH:MM)." }),
-  horário_fim: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Formato de hora inválido (HH:MM)." }),
+  horário_inicio: z.string().regex(timeRegex, { message: "Formato de hora inválido (HH:MM)." }),
+  horário_fim: z.string().regex(timeRegex, { message: "Formato de hora inválido (HH:MM)." }),
   ativo: z.boolean().default(true),
+  dias_semana: z.array(z.string()).optional().nullable(),
+  horario_inicio_sabado: optionalTime,
+  horario_fim_sabado: optionalTime,
+  horario_inicio_domingo: optionalTime,
+  horario_fim_domingo: optionalTime,
+}).superRefine((data, ctx) => {
+    if (data.tipo_turno === '6x18') {
+        if ((data.horario_inicio_sabado && !data.horario_fim_sabado) || (!data.horario_inicio_sabado && data.horario_fim_sabado)) {
+            ctx.addIssue({ code: 'custom', message: 'Preencha início e fim para Sábado.', path: ['horario_fim_sabado'] });
+        }
+        if ((data.horario_inicio_domingo && !data.horario_fim_domingo) || (!data.horario_inicio_domingo && data.horario_fim_domingo)) {
+            ctx.addIssue({ code: 'custom', message: 'Preencha início e fim para Domingo.', path: ['horario_fim_domingo'] });
+        }
+    }
 });
 
 export type OperatorFormData = z.infer<typeof formSchema>;
 
 interface OperatorFormProps {
   initialData: Operator | null;
-  onSubmit: (data: OperatorFormData & { id?: string }) => void;
+  onSubmit: (data: any) => void;
   isLoading: boolean;
   onClear: () => void;
   onDelete?: () => void;
@@ -63,6 +81,11 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
       horário_inicio: initialData?.horário_inicio || "06:00",
       horário_fim: initialData?.horário_fim || "18:00",
       ativo: initialData?.ativo ?? true,
+      dias_semana: initialData?.dias_semana ? initialData.dias_semana.split(',') : [],
+      horario_inicio_sabado: initialData?.horario_inicio_sabado || "",
+      horario_fim_sabado: initialData?.horario_fim_sabado || "",
+      horario_inicio_domingo: initialData?.horario_inicio_domingo || "",
+      horario_fim_domingo: initialData?.horario_fim_domingo || "",
     },
   });
 
@@ -72,12 +95,22 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
   });
 
   const is12x36 = tipoTurno === "12x36_diurno" || tipoTurno === "12x36_noturno";
+  const is6x18 = tipoTurno === "6x18";
 
   const handleSubmit = (values: OperatorFormData) => {
-    const dataToSubmit = { ...values, id: initialData?.id };
-    if (!is12x36) {
-      dataToSubmit.turno_12x36_tipo = null;
+    const dataToSubmit: any = { ...values, id: initialData?.id };
+
+    if (values.tipo_turno === '6x18') {
+        dataToSubmit.dias_semana = values.dias_semana ? values.dias_semana.join(',') : null;
+        dataToSubmit.turno_12x36_tipo = null;
+    } else { // It's a 12x36 shift
+        dataToSubmit.dias_semana = null;
+        dataToSubmit.horario_inicio_sabado = null;
+        dataToSubmit.horario_fim_sabado = null;
+        dataToSubmit.horario_inicio_domingo = null;
+        dataToSubmit.horario_fim_domingo = null;
     }
+    
     onSubmit(dataToSubmit);
   };
 
@@ -90,6 +123,11 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
         horário_inicio: "06:00",
         horário_fim: "18:00",
         ativo: true,
+        dias_semana: [],
+        horario_inicio_sabado: "",
+        horario_fim_sabado: "",
+        horario_inicio_domingo: "",
+        horario_fim_domingo: "",
     });
     onClear();
   }
@@ -127,7 +165,7 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
                   <SelectContent>
                     <SelectItem value="12x36_diurno">12x36 Diurno</SelectItem>
                     <SelectItem value="12x36_noturno">12x36 Noturno</SelectItem>
-                    <SelectItem value="6x18">6x18</SelectItem>
+                    <SelectItem value="6x18">6x18 Fixo</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -188,7 +226,7 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
                 name="horário_inicio"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Horário Início</FormLabel>
+                    <FormLabel>{is6x18 ? "Horário Início (Semana)" : "Horário Início"}</FormLabel>
                     <FormControl>
                         <Input type="time" {...field} />
                     </FormControl>
@@ -201,7 +239,7 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
                 name="horário_fim"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Horário Fim</FormLabel>
+                    <FormLabel>{is6x18 ? "Horário Fim (Semana)" : "Horário Fim"}</FormLabel>
                     <FormControl>
                         <Input type="time" {...field} />
                     </FormControl>
@@ -210,6 +248,39 @@ const OperatorForm = ({ initialData, onSubmit, isLoading, onClear, onDelete }: O
                 )}
             />
         </div>
+
+        {is6x18 && (
+            <div className="space-y-6 p-4 border rounded-lg bg-secondary">
+                <FormField
+                    control={form.control}
+                    name="dias_semana"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <WeekdaySelector value={field.value || []} onChange={field.onChange} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField name="horario_inicio_sabado" control={form.control} render={({field}) => (
+                        <FormItem><FormLabel>Início Sábado</FormLabel><FormControl><Input type="time" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField name="horario_fim_sabado" control={form.control} render={({field}) => (
+                        <FormItem><FormLabel>Fim Sábado</FormLabel><FormControl><Input type="time" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField name="horario_inicio_domingo" control={form.control} render={({field}) => (
+                        <FormItem><FormLabel>Início Domingo</FormLabel><FormControl><Input type="time" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField name="horario_fim_domingo" control={form.control} render={({field}) => (
+                        <FormItem><FormLabel>Fim Domingo</FormLabel><FormControl><Input type="time" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                </div>
+            </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             <FormField
