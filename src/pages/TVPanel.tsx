@@ -35,7 +35,7 @@ const TVPanel = () => {
         supabase.from("operadores").select("*").eq("ativo", true),
         supabase.from("operador_periodos").select("*"),
         supabase.from("configuracao_escala").select("*").eq("id", 1).single(),
-        supabase.from("escala_manual").select("*").in("data", [todayStr, yesterdayStr]),
+        supabase.from("escala_manual").select("*, operadores(*)").in("data", [todayStr, yesterdayStr]),
         supabase.from("escala_manual_periodos").select("*"),
       ]);
 
@@ -85,16 +85,19 @@ const TVPanel = () => {
       if (activeManualShift) {
         processedOperatorIds.add(op.id);
         let currentFocus = activeManualShift.foco || "Apoio";
+        let currentObservation = activeManualShift.observacao || null;
         const relevantPeriods = manualPeriods.filter(p => p.escala_manual_id === activeManualShift!.id);
+        
         for (const period of relevantPeriods) {
           const pStart = timeToMinutes(period.horario_inicio);
           const pEnd = timeToMinutes(period.horario_fim);
           if (currentTimeInMinutes >= pStart && currentTimeInMinutes < pEnd) {
             currentFocus = period.foco;
+            currentObservation = period.observacao || null;
             break;
           }
         }
-        finalOnShiftList.push({ ...op, isOnShift: true, currentFocus, displayStartTime: activeManualShift.horario_inicio, displayEndTime: activeManualShift.horario_fim });
+        finalOnShiftList.push({ ...op, isOnShift: true, currentFocus, currentObservation, displayStartTime: activeManualShift.horario_inicio, displayEndTime: activeManualShift.horario_fim });
       }
     }
 
@@ -117,7 +120,6 @@ const TVPanel = () => {
       let displayStartTime = op.horário_inicio, displayEndTime = op.horário_fim;
       const isWeekday = dayOfWeek > 0 && dayOfWeek < 6;
 
-      // Automatic logic for 6x18 (weekdays and weekends)
       if (op.tipo_turno === '6x18') {
         let relevantStart = null, relevantEnd = null;
         if (dayOfWeek === 6 && op.horario_inicio_sabado && op.horario_fim_sabado) {
@@ -137,7 +139,6 @@ const TVPanel = () => {
             : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
         }
       } 
-      // Automatic logic for 12x36 (ONLY on weekdays)
       else if (isWeekday && op.tipo_turno.startsWith('12x36') && op.horário_inicio && op.horário_fim) {
         shiftStart = timeToMinutes(op.horário_inicio);
         shiftEnd = timeToMinutes(op.horário_fim);
@@ -152,16 +153,18 @@ const TVPanel = () => {
 
       if (isOnShift) {
         let currentFocus = "Apoio";
+        let currentObservation = null;
         const operatorPeriods = periods.filter(p => p.operador_id === op.id);
         for (const period of operatorPeriods) {
           const pStart = timeToMinutes(period.horário_inicio);
           const pEnd = timeToMinutes(period.horário_fim);
           if ((pStart > pEnd) ? (currentTimeInMinutes >= pStart || currentTimeInMinutes < pEnd) : (currentTimeInMinutes >= pStart && currentTimeInMinutes < pEnd)) {
             currentFocus = period.foco;
+            currentObservation = period.observação || null;
             break;
           }
         }
-        finalOnShiftList.push({ ...op, isOnShift: true, currentFocus, displayStartTime, displayEndTime });
+        finalOnShiftList.push({ ...op, isOnShift: true, currentFocus, currentObservation, displayStartTime, displayEndTime });
       }
     }
     return finalOnShiftList;
@@ -222,6 +225,11 @@ const TVPanel = () => {
                 <div className="status-indicator status-active pulse-glow" />
                 <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
                 <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
+                {operator.currentObservation && (
+                  <p className="text-sm text-white/80 mt-1 italic truncate" title={operator.currentObservation}>
+                    {operator.currentObservation}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -240,6 +248,11 @@ const TVPanel = () => {
                 <div className="status-indicator status-active pulse-glow" />
                 <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
                 <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
+                {operator.currentObservation && (
+                  <p className="text-sm text-white/80 mt-1 italic truncate" title={operator.currentObservation}>
+                    {operator.currentObservation}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -258,6 +271,11 @@ const TVPanel = () => {
                 <div className="status-indicator status-active pulse-glow" />
                 <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
                 <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
+                {operator.currentObservation && (
+                  <p className="text-sm text-white/80 mt-1 italic truncate" title={operator.currentObservation}>
+                    {operator.currentObservation}
+                  </p>
+                )}
               </div>
             ))}
           </div>

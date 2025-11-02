@@ -62,6 +62,7 @@ const periodSchema = z.object({
   horario_inicio: z.string().regex(timeRegex, { message: "Formato de hora inválido (HH:MM)." }),
   horario_fim: z.string().regex(timeRegex, { message: "Formato de hora inválido (HH:MM)." }),
   foco: z.enum(["IRIS", "Situator", "Apoio"]),
+  observacao: z.string().optional(),
 });
 
 const timeToMinutes = (time: string) => {
@@ -85,7 +86,7 @@ export const ManualAllocationDialog = ({
 
   const periodForm = useForm<z.infer<typeof periodSchema>>({
     resolver: zodResolver(periodSchema),
-    defaultValues: { foco: "Apoio" },
+    defaultValues: { foco: "Apoio", observacao: "" },
   });
 
   useEffect(() => {
@@ -159,6 +160,7 @@ export const ManualAllocationDialog = ({
         horario_inicio: values.horario_inicio,
         horario_fim: values.horario_fim,
         foco: values.foco,
+        observacao: values.observacao,
       };
       const { error } = await supabase.from("escala_manual_periodos").insert(payload);
       if (error) throw error;
@@ -166,7 +168,7 @@ export const ManualAllocationDialog = ({
     onSuccess: () => {
       toast.success("Período adicionado!");
       refetchPeriods();
-      periodForm.reset({ foco: "Apoio", horario_inicio: "", horario_fim: "" });
+      periodForm.reset({ foco: "Apoio", horario_inicio: "", horario_fim: "", observacao: "" });
     },
     onError: (error) => toast.error("Erro ao salvar período", { description: error.message }),
   });
@@ -250,17 +252,20 @@ export const ManualAllocationDialog = ({
           <div className="mt-6 pt-6 border-t">
             <h3 className="text-lg font-medium mb-4">Períodos de Foco</h3>
             <Form {...periodForm}>
-              <form onSubmit={periodForm.handleSubmit(handleAddPeriod)} className="grid grid-cols-4 gap-2 items-end">
-                <FormField name="horario_inicio" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Início</FormLabel><FormControl><Input type="time" {...field} /></FormControl></FormItem>} />
-                <FormField name="horario_fim" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Fim</FormLabel><FormControl><Input type="time" {...field} /></FormControl></FormItem>} />
-                <FormField name="foco" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Foco</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="IRIS">IRIS</SelectItem><SelectItem value="Situator">Situator</SelectItem><SelectItem value="Apoio">Apoio</SelectItem></SelectContent></Select></FormItem>} />
-                <Button type="submit" disabled={upsertPeriodMutation.isPending}>Adicionar</Button>
+              <form onSubmit={periodForm.handleSubmit(handleAddPeriod)} className="space-y-4">
+                <div className="grid grid-cols-3 gap-2 items-end">
+                  <FormField name="horario_inicio" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Início</FormLabel><FormControl><Input type="time" {...field} /></FormControl></FormItem>} />
+                  <FormField name="horario_fim" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Fim</FormLabel><FormControl><Input type="time" {...field} /></FormControl></FormItem>} />
+                  <FormField name="foco" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Foco</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="IRIS">IRIS</SelectItem><SelectItem value="Situator">Situator</SelectItem><SelectItem value="Apoio">Apoio</SelectItem></SelectContent></Select></FormItem>} />
+                </div>
+                <FormField name="observacao" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Observação (Período)</FormLabel><FormControl><Input placeholder="Opcional" {...field} /></FormControl></FormItem>} />
+                <Button type="submit" disabled={upsertPeriodMutation.isPending} className="w-full">Adicionar Período</Button>
               </form>
             </Form>
             <div className="mt-4 space-y-2">
               {(periods || []).map(p => (
                 <div key={p.id} className="flex justify-between items-center p-2 bg-secondary rounded-md">
-                  <p>{p.horario_inicio} - {p.horario_fim}: <span className="font-semibold">{p.foco}</span></p>
+                  <p>{p.horario_inicio} - {p.horario_fim}: <span className="font-semibold">{p.foco}</span> {p.observacao && <span className="italic text-muted-foreground">({p.observacao})</span>}</p>
                   <Button variant="ghost" size="icon" onClick={() => deletePeriodMutation.mutate(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </div>
               ))}
