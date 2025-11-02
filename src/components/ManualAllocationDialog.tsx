@@ -47,18 +47,20 @@ interface ManualAllocationDialogProps {
   operators: { id: string; nome: string }[];
 }
 
+const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/;
+
 const allocationSchema = z.object({
   data: z.string(),
   operador_id: z.string().uuid(),
-  horario_inicio: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
-  horario_fim: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+  horario_inicio: z.string().regex(timeRegex, { message: "Formato de hora inválido (HH:MM)." }),
+  horario_fim: z.string().regex(timeRegex, { message: "Formato de hora inválido (HH:MM)." }),
   foco: z.enum(["IRIS", "Situator", "Apoio"]),
   observacao: z.string().optional(),
 });
 
 const periodSchema = z.object({
-  horario_inicio: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
-  horario_fim: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+  horario_inicio: z.string().regex(timeRegex, { message: "Formato de hora inválido (HH:MM)." }),
+  horario_fim: z.string().regex(timeRegex, { message: "Formato de hora inválido (HH:MM)." }),
   foco: z.enum(["IRIS", "Situator", "Apoio"]),
 });
 
