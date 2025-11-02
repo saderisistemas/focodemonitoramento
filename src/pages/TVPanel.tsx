@@ -191,7 +191,7 @@ const TVPanel = () => {
     <div className="min-h-screen flex flex-col p-6 pb-24 font-sans">
       <header className="w-full">
         <div className="flex justify-between items-center">
-          <img src="/logo.jpeg" alt="Patrimonium Logo" className="h-20" />
+          <img src="/logo.png" alt="Patrimonium Logo" className="h-20" />
           <div className="text-right">
             <div className="font-mono text-[1.4rem] font-medium text-[#F6F6F6] mb-2">
               {currentTime.toLocaleTimeString("pt-BR")}
