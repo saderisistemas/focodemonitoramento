@@ -214,12 +214,12 @@ const TVPanel = () => {
             </h1>
           </div>
           <div className="text-right">
-            <div className="font-mono text-[1.4rem] font-medium text-[#F6F6F6] mb-2">
+            <div className="font-mono text-5xl font-medium text-[#F6F6F6] mb-2">
               {currentTime.toLocaleTimeString("pt-BR")}
             </div>
-            <div className="flex items-center justify-end gap-2 text-[0.9rem]">
-              <Users size={18} className="text-[#8FC1FF]" />
-              <span className="text-[#C9DEFF]">{currentLeader}</span>
+            <div className="flex items-center justify-end gap-2 text-xl">
+              <Users size={22} className="text-[#8FC1FF]" />
+              <span className="text-[#C9DEFF] font-semibold">{currentLeader}</span>
               <span className="text-[#A0A0A0]">
                 ({currentTime.getHours() >= 7 && currentTime.getHours() < 19 ? "Diurno" : "Noturno"})
               </span>
