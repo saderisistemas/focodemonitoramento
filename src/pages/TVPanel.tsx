@@ -219,8 +219,8 @@ const TVPanel = () => {
             </div>
             <div className="flex items-center justify-end gap-2 text-xl">
               <Users size={22} className="text-[#8FC1FF]" />
-              <span className="text-[#C9DEFF] font-semibold">{currentLeader}</span>
-              <span className="text-[#A0A0A0]">
+              <span className="text-[#C9DEFF] font-semibold text-2xl">{currentLeader}</span>
+              <span className="text-[#A0A0A0] text-xl">
                 ({currentTime.getHours() >= 7 && currentTime.getHours() < 19 ? "Diurno" : "Noturno"})
               </span>
             </div>
@@ -302,6 +302,7 @@ const TVPanel = () => {
 
       <footer className="text-center italic text-[0.9rem] text-[#9C9C9C] py-3 border-t border-white/[.05] mt-auto">
         <p>🕊️ Central Patrimonium – Supervisão contínua para um ambiente seguro e equilibrado.</p>
+        <p className="mt-1">Desenvolvido por: Danilo Saderi</p>
       </footer>
     </div>
   );
