@@ -19,6 +19,7 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TablesInsert } from "@/integrations/supabase/types";
 
 const configSchema = z.object({
   turno_a_trabalha_em_dias: z.string(),
@@ -41,7 +42,18 @@ const ScaleConfig = () => {
         .select("turno_a_trabalha_em_dias, lider_diurno_a_nome, lider_diurno_b_nome, lider_noturno_nome")
         .eq("id", 1)
         .single();
-      if (error) throw error;
+      // Se não houver erro, mas data for null (o que pode acontecer se a linha não existir), retorne um objeto padrão
+      if (!error && !data) {
+        return {
+          turno_a_trabalha_em_dias: 'pares',
+          lider_diurno_a_nome: '',
+          lider_diurno_b_nome: '',
+          lider_noturno_nome: '',
+        }
+      }
+      if (error && error.code !== 'PGRST116') { // PGRST116: 0 rows found
+        throw error;
+      }
       return data;
     },
   });
@@ -69,10 +81,16 @@ const ScaleConfig = () => {
 
   const mutation = useMutation({
     mutationFn: async (newConfig: ConfigFormData) => {
+      const payload: TablesInsert<"configuracao_escala"> = {
+        id: 1,
+        turno_a_trabalha_em_dias: newConfig.turno_a_trabalha_em_dias,
+        lider_diurno_a_nome: newConfig.lider_diurno_a_nome,
+        lider_diurno_b_nome: newConfig.lider_diurno_b_nome,
+        lider_noturno_nome: newConfig.lider_noturno_nome,
+      };
       const { error } = await supabase
         .from("configuracao_escala")
-        .update(newConfig)
-        .eq("id", 1);
+        .upsert(payload, { onConflict: "id" });
       if (error) throw error;
     },
     onSuccess: () => {
