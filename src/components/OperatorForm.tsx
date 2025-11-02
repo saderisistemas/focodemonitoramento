@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import WeekdaySelector from "./WeekdaySelector";
 
-const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/; // Allow optional seconds
 const optionalTime = z.string().regex(timeRegex, { message: "Formato inválido." }).optional().nullable().or(z.literal(''));
 
 const formSchema = z.object({
