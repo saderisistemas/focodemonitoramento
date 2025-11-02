@@ -4,7 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { Tables } from "@/integrations/supabase/types";
 
-type Operator = Tables<"operadores"> & { turno_12x36_tipo?: "A" | "B" | null };
+type Operator = Tables<"operadores"> & { 
+  turno_12x36_tipo?: "A" | "B" | null,
+  dias_semana?: string | null,
+  horario_inicio_sabado?: string | null,
+  horario_fim_sabado?: string | null,
+  horario_inicio_domingo?: string | null,
+  horario_fim_domingo?: string | null,
+};
 type Period = Tables<"operador_periodos">;
 type Config = { turno_a_trabalha_em_dias: string };
 
@@ -52,10 +59,12 @@ const TVPanel = () => {
     const now = currentTime;
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const dayMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+    const currentDayAbbr = dayMap[dayOfWeek];
     const config = dbConfig || { turno_a_trabalha_em_dias: 'pares' };
 
-    const isScheduledForDate = (op: Operator, date: Date) => {
-      if (!op.tipo_turno.startsWith("12x36")) return true;
+    const isScheduledFor12x36 = (op: Operator, date: Date) => {
       if (!op.turno_12x36_tipo) return false;
       const dayOfMonth = date.getDate();
       const isEvenDay = dayOfMonth % 2 === 0;
@@ -67,14 +76,56 @@ const TVPanel = () => {
 
     return operators
       .map((op) => {
-        if (!op.horário_inicio || !op.horário_fim) {
-          return { ...op, isOnShift: false, currentFocus: null, currentPeriod: null };
+        let isOnShift = false;
+        let shiftStart = 0;
+        let shiftEnd = 0;
+        let displayStartTime = op.horário_inicio;
+        let displayEndTime = op.horário_fim;
+
+        // Logic for 6x18 shifts
+        if (op.tipo_turno === '6x18') {
+          let relevantStartTime: string | null | undefined = null;
+          let relevantEndTime: string | null | undefined = null;
+
+          if (dayOfWeek === 6 && op.horario_inicio_sabado && op.horario_fim_sabado) { // Saturday
+            relevantStartTime = op.horario_inicio_sabado;
+            relevantEndTime = op.horario_fim_sabado;
+          } else if (dayOfWeek === 0 && op.horario_inicio_domingo && op.horario_fim_domingo) { // Sunday
+            relevantStartTime = op.horario_inicio_domingo;
+            relevantEndTime = op.horario_fim_domingo;
+          } else if (dayOfWeek > 0 && dayOfWeek < 6) { // Weekdays
+            if (op.dias_semana?.includes(currentDayAbbr)) {
+              relevantStartTime = op.horário_inicio;
+              relevantEndTime = op.horário_fim;
+            }
+          }
+
+          if (relevantStartTime && relevantEndTime) {
+            shiftStart = timeToMinutes(relevantStartTime);
+            shiftEnd = timeToMinutes(relevantEndTime);
+            displayStartTime = relevantStartTime;
+            displayEndTime = relevantEndTime;
+            isOnShift = (shiftStart > shiftEnd)
+              ? (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd)
+              : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
+          }
+        } 
+        // Logic for 12x36 shifts
+        else if (op.tipo_turno.startsWith('12x36')) {
+          if (op.horário_inicio && op.horário_fim) {
+            shiftStart = timeToMinutes(op.horário_inicio);
+            shiftEnd = timeToMinutes(op.horário_fim);
+            const isWithinTime = (shiftStart > shiftEnd)
+              ? (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd)
+              : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
+
+            if (isWithinTime) {
+              const isNightShift = shiftStart > shiftEnd;
+              const dateToCheck = (isNightShift && currentTimeInMinutes < shiftEnd) ? yesterday : now;
+              isOnShift = isScheduledFor12x36(op, dateToCheck);
+            }
+          }
         }
-        const shiftStart = timeToMinutes(op.horário_inicio);
-        const shiftEnd = timeToMinutes(op.horário_fim);
-        let isOnShift = (shiftStart > shiftEnd)
-          ? (currentTimeInMinutes >= shiftStart || currentTimeInMinutes < shiftEnd)
-          : (currentTimeInMinutes >= shiftStart && currentTimeInMinutes < shiftEnd);
 
         let currentFocus: string | null = null;
         let currentPeriod: Period | null = null;
@@ -95,17 +146,10 @@ const TVPanel = () => {
           }
           if (!currentFocus) currentFocus = "Apoio";
         }
-        return { ...op, isOnShift, currentFocus, currentPeriod };
+        
+        return { ...op, isOnShift, currentFocus, currentPeriod, displayStartTime, displayEndTime };
       })
-      .filter((op) => {
-        if (!op.isOnShift) return false;
-        const shiftStart = timeToMinutes(op.horário_inicio!);
-        const isNightShift = shiftStart > timeToMinutes(op.horário_fim!);
-        if (isNightShift) {
-          return (currentTimeInMinutes >= shiftStart) ? isScheduledForDate(op, now) : isScheduledForDate(op, yesterday);
-        }
-        return isScheduledForDate(op, now);
-      });
+      .filter((op) => op.isOnShift);
   }, [data, currentTime]);
 
   const getOperatorsByFocus = (focus: string) => {
@@ -162,7 +206,7 @@ const TVPanel = () => {
               >
                 <div className="status-indicator status-active pulse-glow" />
                 <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
-                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.horário_inicio} - {operator.horário_fim}</p>
+                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
                 <p className="text-[1rem] text-white mt-1 transition-transform duration-300 group-hover:scale-105">
                   Foco: {operator.currentPeriod?.foco || "Apoio"}
                 </p>
@@ -183,7 +227,7 @@ const TVPanel = () => {
               >
                 <div className="status-indicator status-active pulse-glow" />
                 <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
-                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.horário_inicio} - {operator.horário_fim}</p>
+                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
                 <p className="text-[1rem] text-white mt-1 transition-transform duration-300 group-hover:scale-105">
                   Foco: {operator.currentPeriod?.foco || "Apoio"}
                 </p>
@@ -204,7 +248,7 @@ const TVPanel = () => {
               >
                 <div className="status-indicator status-active pulse-glow" />
                 <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
-                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.horário_inicio} - {operator.horário_fim}</p>
+                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
                 <p className="text-[1rem] text-white mt-1 transition-transform duration-300 group-hover:scale-105">
                   Foco: {operator.currentPeriod?.foco || "Apoio"}
                 </p>
