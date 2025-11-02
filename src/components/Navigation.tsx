@@ -14,11 +14,6 @@ const Navigation = () => {
     { path: "/scale-config", label: "Configurações", icon: Cog },
   ];
 
-  // Oculta a navegação no painel da TV para uma visualização limpa
-  if (location.pathname === "/tv-panel" || location.pathname === "/") {
-    return null;
-  }
-
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-[#181818] border-t border-white/10 z-50">
       <div className="flex items-center justify-center gap-4 p-2">

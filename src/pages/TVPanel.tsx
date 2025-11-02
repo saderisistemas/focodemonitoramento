@@ -126,7 +126,7 @@ const TVPanel = () => {
   }, [currentTime]);
 
   return (
-    <div className="min-h-screen flex flex-col p-5 font-sans">
+    <div className="min-h-screen flex flex-col p-5 pb-20 font-sans">
       <header className="w-full">
         <div className="flex justify-between items-start">
           <div>
