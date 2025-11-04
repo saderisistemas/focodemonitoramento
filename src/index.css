@@ -58,7 +58,7 @@
   html, body {
     width: 100%;
     height: 100%;
-    overflow: hidden; /* Prevents scrollbars on the body */
+    /* Removed overflow: hidden to allow scrolling on non-panel pages */
   }
 
   body {
@@ -71,17 +71,6 @@
 }
 
 @layer components {
-  /* Updated Gradients */
-  .gradient-iris {
-    background-image: linear-gradient(135deg, #FF7A1A, #C45A14);
-  }
-  .gradient-situator {
-    background-image: linear-gradient(135deg, #1E97F0, #15689E);
-  }
-  .gradient-apoio {
-    background-image: linear-gradient(135deg, #00AD68, #00794A);
-  }
-
   /* Updated Status Indicator */
   .status-indicator {
     @apply absolute top-4 right-4 w-[18px] h-[18px] rounded-full;

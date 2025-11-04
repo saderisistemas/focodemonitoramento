@@ -203,25 +203,33 @@ const TVPanel = () => {
         : (config.lider_diurno_b_nome || "Líder Turno B");
   }, [currentTime, data]);
 
-  const renderOperatorCard = (operator: any, index: number, type: 'iris' | 'situator' | 'apoio') => (
-    <div 
-      key={operator.id} 
-      className={`relative group gradient-${type} border border-white/[.07] rounded-4xl px-8 py-7 shadow-[0_5px_22px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out hover:scale-104 hover:shadow-[0_0_16px_rgba(255,255,255,0.12)] animate-fade-in w-[96%] mx-auto min-h-[190px]`}
-      style={{ animationDelay: `${index * 100}ms` }}
-    >
-      <div className="status-indicator status-active pulse-glow" />
-      <h3 className="text-[1.65rem] font-semibold text-white">{operator.nome}</h3>
-      <p className="text-[1.2rem] text-[#EAEAEA]">{operator.displayStartTime} - {operator.displayEndTime}</p>
-      {operator.currentObservation && (
-        <p className="text-[1.05rem] text-[#D0D0D0] mt-1 italic truncate" title={operator.currentObservation}>
-          {operator.currentObservation}
-        </p>
-      )}
-    </div>
-  );
+  const renderOperatorCard = (operator: any, index: number, type: 'iris' | 'situator' | 'apoio') => {
+    const cardColors = {
+      iris: "bg-[rgba(255,122,26,0.15)]",
+      situator: "bg-[rgba(30,151,240,0.15)]",
+      apoio: "bg-[rgba(0,173,104,0.15)]",
+    };
+
+    return (
+      <div 
+        key={operator.id} 
+        className={`relative group ${cardColors[type]} border border-white/[.08] rounded-4xl px-8 py-7 shadow-[0_3px_14px_rgba(0,0,0,0.35)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_14px_rgba(255,255,255,0.08)] animate-fade-in w-[96%] mx-auto min-h-[190px]`}
+        style={{ animationDelay: `${index * 100}ms` }}
+      >
+        <div className="status-indicator status-active pulse-glow" />
+        <h3 className="text-[1.65rem] font-semibold text-white">{operator.nome}</h3>
+        <p className="text-[1.2rem] text-[#EAEAEA]">{operator.displayStartTime} - {operator.displayEndTime}</p>
+        {operator.currentObservation && (
+          <p className="text-[1.05rem] text-[#D0D0D0] mt-1 italic truncate" title={operator.currentObservation}>
+            {operator.currentObservation}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen flex flex-col p-6 pb-24 font-sans">
+    <div className="h-screen overflow-hidden flex flex-col p-6 pb-24 font-sans">
       <header className="w-full flex-shrink-0">
         <div className="flex justify-between items-center">
           <img src="/logo.png" alt="Patrimonium Logo" className="h-20" />
@@ -244,12 +252,12 @@ const TVPanel = () => {
             </div>
           </div>
         </div>
-        <div className="h-[2px] bg-iris mt-4 mb-4" />
+        <div className="h-[2px] bg-white/[.08] mt-4 mb-6" />
       </header>
 
       <main className="flex-grow tv-panel-grid">
         {/* IRIS Column */}
-        <div className="flex flex-col items-center">
+        <div className="rounded-[10px] px-4 py-6 bg-[linear-gradient(180deg,rgba(255,122,26,0.06)_0%,rgba(255,122,26,0.03)_100%)] border-r-2 border-iris/30">
           <h2 className="text-2xl font-bold text-white mb-4"><span className="text-iris">🟠</span> IRIS</h2>
           <div className="operator-column">
             {getOperatorsByFocus("IRIS").map((op, i) => renderOperatorCard(op, i, 'iris'))}
@@ -257,7 +265,7 @@ const TVPanel = () => {
         </div>
         
         {/* Situator Column */}
-        <div className="flex flex-col items-center">
+        <div className="rounded-[10px] px-4 py-6 bg-[linear-gradient(180deg,rgba(30,151,240,0.06)_0%,rgba(30,151,240,0.03)_100%)] border-r-2 border-situator/30">
           <h2 className="text-2xl font-bold text-white mb-4"><span className="text-situator">🔵</span> Situator</h2>
           <div className="operator-column">
             {getOperatorsByFocus("Situator").map((op, i) => renderOperatorCard(op, i, 'situator'))}
@@ -265,7 +273,7 @@ const TVPanel = () => {
         </div>
         
         {/* Apoio Column */}
-        <div className="flex flex-col items-center">
+        <div className="rounded-[10px] px-4 py-6 bg-[linear-gradient(180deg,rgba(0,173,104,0.06)_0%,rgba(0,173,104,0.03)_100%)]">
           <h2 className="text-2xl font-bold text-white mb-4"><span className="text-apoio">🟢</span> Apoio/Supervisão</h2>
           <div className="operator-column">
             {getOperatorsByFocus("Apoio").map((op, i) => renderOperatorCard(op, i, 'apoio'))}
