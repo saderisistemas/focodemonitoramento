@@ -232,7 +232,7 @@ const TVPanel = () => {
     <div className="h-screen overflow-hidden flex flex-col p-6 pb-24 font-sans">
       <header className="w-full flex-shrink-0">
         <div className="flex justify-between items-center">
-          <img src="/logo.png" alt="Patrimonium Logo" className="h-20" />
+          <img src="/logo.png" alt="Patrimonium Logo" className="h-24" />
           <div className="text-center">
             <h1 className="text-[2.8rem] font-bold text-white" style={{ letterSpacing: '1.5px' }}>
               Foco de Monitoramento
@@ -243,10 +243,10 @@ const TVPanel = () => {
             <div className="font-mono text-[2rem] font-medium text-white mb-2">
               {currentTime.toLocaleTimeString("pt-BR")}
             </div>
-            <div className="flex items-center justify-end gap-2 text-[1rem]">
-              <Users size={22} className="text-[#8FC1FF]" />
-              <span className="text-[#C9DEFF] font-semibold">{currentLeader}</span>
-              <span className="text-[#A0A0A0]">
+            <div className="flex items-center justify-end gap-2 text-lg">
+              <Users size={24} className="text-[#8FC1FF]" />
+              <span className="text-[#C9DEFF] font-semibold">Líder: {currentLeader}</span>
+              <span className="text-[#A0A0A0] text-base">
                 ({currentTime.getHours() >= 7 && currentTime.getHours() < 19 ? "Diurno" : "Noturno"})
               </span>
             </div>
