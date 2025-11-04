@@ -260,7 +260,7 @@ const TVPanel = () => {
         <div className="h-[2px] bg-white/[.08] mt-4 mb-6" />
       </header>
 
-      <main className="flex-grow overflow-y-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="flex-grow overflow-y-auto grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
         {/* IRIS Column */}
         <div className="rounded-[10px] p-4 bg-[linear-gradient(180deg,rgba(255,122,26,0.06)_0%,rgba(255,122,26,0.03)_100%)] lg:border-r-2 border-iris/30">
           <h2 className="text-xl md:text-2xl font-bold text-white mb-4"><span className="text-iris">🟠</span> IRIS</h2>
