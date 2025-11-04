@@ -286,7 +286,7 @@ const TVPanel = () => {
         </div>
       </main>
 
-      <footer className="text-center italic text-xs md:text-[0.9rem] text-[#9C9C9C] py-3 border-t border-white/[.05] mt-auto flex-shrink-0">
+      <footer className="text-center italic text-xs md:text-[0.9rem] text-[#9C9C9C] py-3 border-t border-white/[.05] flex-shrink-0">
         <p>🕊️ Central Patrimonium – Supervisão contínua para um ambiente seguro e equilibrado.</p>
         <p className="mt-1">Desenvolvido por: Danilo Saderi</p>
       </footer>
