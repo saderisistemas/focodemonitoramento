@@ -218,14 +218,14 @@ const TVPanel = () => {
     return (
       <div 
         key={operator.id} 
-        className={`relative group ${cardColors[type]} border border-white/[.08] rounded-4xl px-6 md:px-8 py-6 md:py-7 shadow-[0_3px_14px_rgba(0,0,0,0.35)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_14px_rgba(255,255,255,0.08)] animate-fade-in w-full mx-auto min-h-[160px] md:min-h-[190px]`}
+        className={`relative group ${cardColors[type]} border border-white/[.08] rounded-4xl px-4 py-4 md:px-8 md:py-7 shadow-[0_3px_14px_rgba(0,0,0,0.35)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_14px_rgba(255,255,255,0.08)] animate-fade-in w-full mx-auto min-h-[140px] md:min-h-[190px]`}
         style={{ animationDelay: `${index * 100}ms` }}
       >
         <div className="status-indicator status-active pulse-glow" />
-        <h3 className="text-lg md:text-[1.65rem] font-semibold text-white">{operator.nome}</h3>
-        <p className="text-base md:text-[1.2rem] text-[#EAEAEA]">{formatTimeForDisplay(operator.displayStartTime)} - {formatTimeForDisplay(operator.displayEndTime)}</p>
+        <h3 className="text-base md:text-[1.65rem] font-semibold text-white">{operator.nome}</h3>
+        <p className="text-sm md:text-[1.2rem] text-[#EAEAEA]">{formatTimeForDisplay(operator.displayStartTime)} - {formatTimeForDisplay(operator.displayEndTime)}</p>
         {operator.currentObservation && (
-          <p className="text-sm md:text-[1.05rem] text-[#D0D0D0] mt-1 italic break-words">
+          <p className="text-xs md:text-[1.05rem] text-[#D0D0D0] mt-1 italic break-words">
             {operator.currentObservation}
           </p>
         )}
