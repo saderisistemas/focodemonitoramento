@@ -31,7 +31,7 @@ const Navigation = () => {
               )}
             >
               <item.icon className="w-6 h-6 text-[#F2F2F2]" />
-              <span className="text-xs mt-1">{item.label}</span>
+              <span className="text-[1.05rem] mt-1">{item.label}</span>
             </Button>
           );
         })}

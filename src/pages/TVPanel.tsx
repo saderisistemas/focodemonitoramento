@@ -203,24 +203,42 @@ const TVPanel = () => {
         : (config.lider_diurno_b_nome || "Líder Turno B");
   }, [currentTime, data]);
 
+  const renderOperatorCard = (operator: any, index: number, type: 'iris' | 'situator' | 'apoio') => (
+    <div 
+      key={operator.id} 
+      className={`relative group gradient-${type} border border-white/[.07] rounded-4xl px-8 py-7 shadow-[0_5px_22px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out hover:scale-104 hover:shadow-[0_0_16px_rgba(255,255,255,0.12)] animate-fade-in w-[96%] mx-auto min-h-[190px]`}
+      style={{ animationDelay: `${index * 100}ms` }}
+    >
+      <div className="status-indicator status-active pulse-glow" />
+      <h3 className="text-[1.65rem] font-semibold text-white">{operator.nome}</h3>
+      <p className="text-[1.2rem] text-[#EAEAEA]">{operator.displayStartTime} - {operator.displayEndTime}</p>
+      {operator.currentObservation && (
+        <p className="text-[1.05rem] text-[#D0D0D0] mt-1 italic truncate" title={operator.currentObservation}>
+          {operator.currentObservation}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex flex-col p-6 pb-24 font-sans">
-      <header className="w-full">
+      <header className="w-full flex-shrink-0">
         <div className="flex justify-between items-center">
           <img src="/logo.png" alt="Patrimonium Logo" className="h-20" />
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-white tracking-wider">
-              Foco de Monitoramento - REAL TIME
+            <h1 className="text-[2.8rem] font-bold text-white" style={{ letterSpacing: '1.5px' }}>
+              Foco de Monitoramento
             </h1>
+            <p className="text-[1.2rem] text-[#BBBBBB]">REAL TIME</p>
           </div>
           <div className="text-right">
-            <div className="font-mono text-5xl font-medium text-[#F6F6F6] mb-2">
+            <div className="font-mono text-[2rem] font-medium text-white mb-2">
               {currentTime.toLocaleTimeString("pt-BR")}
             </div>
-            <div className="flex items-center justify-end gap-2 text-xl">
+            <div className="flex items-center justify-end gap-2 text-[1rem]">
               <Users size={22} className="text-[#8FC1FF]" />
-              <span className="text-[#C9DEFF] font-semibold text-2xl">{currentLeader}</span>
-              <span className="text-[#A0A0A0] text-xl">
+              <span className="text-[#C9DEFF] font-semibold">{currentLeader}</span>
+              <span className="text-[#A0A0A0]">
                 ({currentTime.getHours() >= 7 && currentTime.getHours() < 19 ? "Diurno" : "Noturno"})
               </span>
             </div>
@@ -229,78 +247,33 @@ const TVPanel = () => {
         <div className="h-[2px] bg-iris mt-4 mb-4" />
       </header>
 
-      <main className="flex-grow grid grid-cols-[35fr_1px_30fr_1px_35fr] gap-6">
+      <main className="flex-grow tv-panel-grid">
         {/* IRIS Column */}
         <div className="flex flex-col items-center">
           <h2 className="text-2xl font-bold text-white mb-4"><span className="text-iris">🟠</span> IRIS</h2>
-          <div className="w-full space-y-3.5">
-            {getOperatorsByFocus("IRIS").map((operator, index) => (
-              <div 
-                key={operator.id} 
-                className="relative group gradient-iris border border-white/[.07] rounded-4xl px-5 py-4 shadow-[0_3px_10px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_12px_rgba(255,255,255,0.10)] animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="status-indicator status-active pulse-glow" />
-                <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
-                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
-                {operator.currentObservation && (
-                  <p className="text-sm text-white/80 mt-1 italic truncate" title={operator.currentObservation}>
-                    {operator.currentObservation}
-                  </p>
-                )}
-              </div>
-            ))}
+          <div className="operator-column">
+            {getOperatorsByFocus("IRIS").map((op, i) => renderOperatorCard(op, i, 'iris'))}
           </div>
         </div>
-        <div className="w-full h-full bg-border" />
+        
         {/* Situator Column */}
         <div className="flex flex-col items-center">
           <h2 className="text-2xl font-bold text-white mb-4"><span className="text-situator">🔵</span> Situator</h2>
-          <div className="w-full space-y-3.5">
-            {getOperatorsByFocus("Situator").map((operator, index) => (
-              <div 
-                key={operator.id} 
-                className="relative group gradient-situator border border-white/[.07] rounded-4xl px-5 py-4 shadow-[0_3px_10px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_12px_rgba(255,255,255,0.10)] animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="status-indicator status-active pulse-glow" />
-                <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
-                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
-                {operator.currentObservation && (
-                  <p className="text-sm text-white/80 mt-1 italic truncate" title={operator.currentObservation}>
-                    {operator.currentObservation}
-                  </p>
-                )}
-              </div>
-            ))}
+          <div className="operator-column">
+            {getOperatorsByFocus("Situator").map((op, i) => renderOperatorCard(op, i, 'situator'))}
           </div>
         </div>
-        <div className="w-full h-full bg-border" />
+        
         {/* Apoio Column */}
         <div className="flex flex-col items-center">
           <h2 className="text-2xl font-bold text-white mb-4"><span className="text-apoio">🟢</span> Apoio/Supervisão</h2>
-          <div className="w-full space-y-3.5">
-            {getOperatorsByFocus("Apoio").map((operator, index) => (
-              <div 
-                key={operator.id} 
-                className="relative group gradient-apoio border border-white/[.07] rounded-4xl px-5 py-4 shadow-[0_3px_10px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_12px_rgba(255,255,255,0.10)] animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="status-indicator status-active pulse-glow" />
-                <h3 className="text-[1.45rem] font-semibold text-white">{operator.nome}</h3>
-                <p className="text-[1.05rem] text-[#E4E6EB]" style={{ letterSpacing: '0.5px' }}>{operator.displayStartTime} - {operator.displayEndTime}</p>
-                {operator.currentObservation && (
-                  <p className="text-sm text-white/80 mt-1 italic truncate" title={operator.currentObservation}>
-                    {operator.currentObservation}
-                  </p>
-                )}
-              </div>
-            ))}
+          <div className="operator-column">
+            {getOperatorsByFocus("Apoio").map((op, i) => renderOperatorCard(op, i, 'apoio'))}
           </div>
         </div>
       </main>
 
-      <footer className="text-center italic text-[0.9rem] text-[#9C9C9C] py-3 border-t border-white/[.05] mt-auto">
+      <footer className="text-center italic text-[0.9rem] text-[#9C9C9C] py-3 border-t border-white/[.05] mt-auto flex-shrink-0">
         <p>🕊️ Central Patrimonium – Supervisão contínua para um ambiente seguro e equilibrado.</p>
         <p className="mt-1">Desenvolvido por: Danilo Saderi</p>
       </footer>

@@ -51,7 +51,14 @@
   }
 
   html {
-    font-size: 105%;
+    /* Proportional font size for responsiveness */
+    font-size: calc(0.8vw + 0.4rem);
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* Prevents scrollbars on the body */
   }
 
   body {
@@ -64,18 +71,20 @@
 }
 
 @layer components {
+  /* Updated Gradients */
   .gradient-iris {
-    background-image: linear-gradient(145deg, #FF7A1A, #D66716);
+    background-image: linear-gradient(135deg, #FF7A1A, #C45A14);
   }
   .gradient-situator {
-    background-image: linear-gradient(145deg, #1E97F0, #1468A8);
+    background-image: linear-gradient(135deg, #1E97F0, #15689E);
   }
   .gradient-apoio {
-    background-image: linear-gradient(145deg, #00AD68, #007E50);
+    background-image: linear-gradient(135deg, #00AD68, #00794A);
   }
 
+  /* Updated Status Indicator */
   .status-indicator {
-    @apply absolute top-4 right-4 w-4 h-4 rounded-full;
+    @apply absolute top-4 right-4 w-[18px] h-[18px] rounded-full;
     box-shadow: 0 0 8px currentColor;
   }
 
@@ -100,5 +109,23 @@
   .animate-fade-in {
     animation: fade-in 0.5s ease-out forwards;
     opacity: 0;
+  }
+
+  /* Responsive Grid for TV Panel */
+  .tv-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.8rem;
+    align-items: start;
+    justify-content: center;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Column container with scroll */
+  .operator-column {
+    @apply w-full space-y-4 overflow-y-auto pr-2;
+    max-height: calc(100vh - 280px); /* Adjust based on header/footer height */
   }
 }
