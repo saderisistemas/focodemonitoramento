@@ -203,6 +203,11 @@ const TVPanel = () => {
         : (config.lider_diurno_b_nome || "Líder Turno B");
   }, [currentTime, data]);
 
+  const formatTimeForDisplay = (timeStr: string | null | undefined): string => {
+    if (!timeStr) return "";
+    return timeStr.substring(0, 5);
+  };
+
   const renderOperatorCard = (operator: any, index: number, type: 'iris' | 'situator' | 'apoio') => {
     const cardColors = {
       iris: "bg-[rgba(255,122,26,0.15)]",
@@ -218,7 +223,7 @@ const TVPanel = () => {
       >
         <div className="status-indicator status-active pulse-glow" />
         <h3 className="text-[1.65rem] font-semibold text-white">{operator.nome}</h3>
-        <p className="text-[1.2rem] text-[#EAEAEA]">{operator.displayStartTime} - {operator.displayEndTime}</p>
+        <p className="text-[1.2rem] text-[#EAEAEA]">{formatTimeForDisplay(operator.displayStartTime)} - {formatTimeForDisplay(operator.displayEndTime)}</p>
         {operator.currentObservation && (
           <p className="text-[1.05rem] text-[#D0D0D0] mt-1 italic break-words">
             {operator.currentObservation}
