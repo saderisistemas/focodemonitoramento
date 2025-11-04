@@ -220,7 +220,7 @@ const TVPanel = () => {
         <h3 className="text-[1.65rem] font-semibold text-white">{operator.nome}</h3>
         <p className="text-[1.2rem] text-[#EAEAEA]">{operator.displayStartTime} - {operator.displayEndTime}</p>
         {operator.currentObservation && (
-          <p className="text-[1.05rem] text-[#D0D0D0] mt-1 italic truncate" title={operator.currentObservation}>
+          <p className="text-[1.05rem] text-[#D0D0D0] mt-1 italic break-words">
             {operator.currentObservation}
           </p>
         )}
