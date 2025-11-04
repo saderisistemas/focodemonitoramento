@@ -210,7 +210,7 @@ export const ManualAllocationDialog = ({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit((d) => upsertAllocationMutation.mutate(d))} className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <FormField name="data" control={form.control} render={({ field }) => (
                 <FormItem><FormLabel>Data</FormLabel><Select onValueChange={field.onChange} value={field.value}>
                   <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
@@ -234,7 +234,7 @@ export const ManualAllocationDialog = ({
                 </Select><FormMessage /></FormItem>
               )} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField name="horario_inicio" control={form.control} render={({ field }) => (
                 <FormItem><FormLabel>Horário Início</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -256,7 +256,7 @@ export const ManualAllocationDialog = ({
             <h3 className="text-lg font-medium mb-4">Períodos de Foco</h3>
             <Form {...periodForm}>
               <form onSubmit={periodForm.handleSubmit(handleAddPeriod)} className="space-y-4">
-                <div className="grid grid-cols-3 gap-2 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 items-end">
                   <FormField name="horario_inicio" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Início</FormLabel><FormControl><Input type="time" {...field} /></FormControl></FormItem>} />
                   <FormField name="horario_fim" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Fim</FormLabel><FormControl><Input type="time" {...field} /></FormControl></FormItem>} />
                   <FormField name="foco" control={periodForm.control} render={({ field }) => <FormItem><FormLabel>Foco</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="IRIS">IRIS</SelectItem><SelectItem value="Situator">Situator</SelectItem><SelectItem value="Apoio">Apoio</SelectItem></SelectContent></Select></FormItem>} />
@@ -268,7 +268,7 @@ export const ManualAllocationDialog = ({
             <div className="mt-4 space-y-2">
               {(periods || []).map(p => (
                 <div key={p.id} className="flex justify-between items-center p-2 bg-secondary rounded-md">
-                  <p>{p.horario_inicio} - {p.horario_fim}: <span className="font-semibold">{p.foco}</span> {p.observacao && <span className="italic text-muted-foreground">({p.observacao})</span>}</p>
+                  <p className="text-sm break-all">{p.horario_inicio} - {p.horario_fim}: <span className="font-semibold">{p.foco}</span> {p.observacao && <span className="italic text-muted-foreground">({p.observacao})</span>}</p>
                   <Button variant="ghost" size="icon" onClick={() => deletePeriodMutation.mutate(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </div>
               ))}

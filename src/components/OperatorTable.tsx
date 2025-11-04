@@ -42,7 +42,7 @@ const OperatorTable = ({ operators, isLoading, onEdit, onDelete }: OperatorTable
   }
 
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -57,10 +57,10 @@ const OperatorTable = ({ operators, isLoading, onEdit, onDelete }: OperatorTable
         <TableBody>
           {operators.map((op) => (
             <TableRow key={op.id}>
-              <TableCell className="font-medium">{op.nome}</TableCell>
-              <TableCell>{op.tipo_turno.replace("_", " ").toUpperCase()}</TableCell>
-              <TableCell>{op.cargo}</TableCell>
-              <TableCell>{op.horário_inicio} - {op.horário_fim}</TableCell>
+              <TableCell className="font-medium whitespace-nowrap">{op.nome}</TableCell>
+              <TableCell className="whitespace-nowrap">{op.tipo_turno.replace("_", " ").toUpperCase()}</TableCell>
+              <TableCell className="whitespace-nowrap">{op.cargo}</TableCell>
+              <TableCell className="whitespace-nowrap">{op.horário_inicio} - {op.horário_fim}</TableCell>
               <TableCell>
                 <Badge variant={op.ativo ? "default" : "destructive"}>
                   {op.ativo ? "Ativo" : "Inativo"}

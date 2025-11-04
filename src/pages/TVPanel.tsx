@@ -218,14 +218,14 @@ const TVPanel = () => {
     return (
       <div 
         key={operator.id} 
-        className={`relative group ${cardColors[type]} border border-white/[.08] rounded-4xl px-8 py-7 shadow-[0_3px_14px_rgba(0,0,0,0.35)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_14px_rgba(255,255,255,0.08)] animate-fade-in w-[96%] mx-auto min-h-[190px]`}
+        className={`relative group ${cardColors[type]} border border-white/[.08] rounded-4xl px-6 md:px-8 py-6 md:py-7 shadow-[0_3px_14px_rgba(0,0,0,0.35)] transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-[0_0_14px_rgba(255,255,255,0.08)] animate-fade-in w-full mx-auto min-h-[160px] md:min-h-[190px]`}
         style={{ animationDelay: `${index * 100}ms` }}
       >
         <div className="status-indicator status-active pulse-glow" />
-        <h3 className="text-[1.65rem] font-semibold text-white">{operator.nome}</h3>
-        <p className="text-[1.2rem] text-[#EAEAEA]">{formatTimeForDisplay(operator.displayStartTime)} - {formatTimeForDisplay(operator.displayEndTime)}</p>
+        <h3 className="text-lg md:text-[1.65rem] font-semibold text-white">{operator.nome}</h3>
+        <p className="text-base md:text-[1.2rem] text-[#EAEAEA]">{formatTimeForDisplay(operator.displayStartTime)} - {formatTimeForDisplay(operator.displayEndTime)}</p>
         {operator.currentObservation && (
-          <p className="text-[1.05rem] text-[#D0D0D0] mt-1 italic break-words">
+          <p className="text-sm md:text-[1.05rem] text-[#D0D0D0] mt-1 italic break-words">
             {operator.currentObservation}
           </p>
         )}
@@ -234,24 +234,24 @@ const TVPanel = () => {
   };
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col p-6 pb-24 font-sans">
+    <div className="h-screen overflow-hidden flex flex-col p-4 md:p-6 pb-24 font-sans">
       <header className="w-full flex-shrink-0">
-        <div className="flex justify-between items-center">
-          <img src="/logo.png" alt="Patrimonium Logo" className="h-24" />
-          <div className="text-center">
-            <h1 className="text-[2.8rem] font-bold text-white" style={{ letterSpacing: '1.5px' }}>
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+          <img src="/logo.png" alt="Patrimonium Logo" className="h-16 md:h-24" />
+          <div className="flex-grow">
+            <h1 className="text-2xl md:text-[2.8rem] font-bold text-white" style={{ letterSpacing: '1.5px' }}>
               Foco de Monitoramento
             </h1>
-            <p className="text-[1.2rem] text-[#BBBBBB]">REAL TIME</p>
+            <p className="text-base md:text-[1.2rem] text-[#BBBBBB]">REAL TIME</p>
           </div>
-          <div className="text-right">
-            <div className="font-mono text-[2rem] font-medium text-white mb-2">
+          <div className="text-center md:text-right">
+            <div className="font-mono text-xl md:text-[2rem] font-medium text-white mb-1 md:mb-2">
               {currentTime.toLocaleTimeString("pt-BR")}
             </div>
-            <div className="flex items-center justify-end gap-2 text-lg">
+            <div className="flex items-center justify-center md:justify-end gap-2 text-base md:text-lg">
               <Users size={24} className="text-[#8FC1FF]" />
               <span className="text-[#C9DEFF] font-semibold">Líder: {currentLeader}</span>
-              <span className="text-[#A0A0A0] text-base">
+              <span className="text-[#A0A0A0] text-sm md:text-base">
                 ({currentTime.getHours() >= 7 && currentTime.getHours() < 19 ? "Diurno" : "Noturno"})
               </span>
             </div>
@@ -260,33 +260,33 @@ const TVPanel = () => {
         <div className="h-[2px] bg-white/[.08] mt-4 mb-6" />
       </header>
 
-      <main className="flex-grow tv-panel-grid">
+      <main className="flex-grow overflow-y-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* IRIS Column */}
-        <div className="rounded-[10px] px-4 py-6 bg-[linear-gradient(180deg,rgba(255,122,26,0.06)_0%,rgba(255,122,26,0.03)_100%)] border-r-2 border-iris/30">
-          <h2 className="text-2xl font-bold text-white mb-4"><span className="text-iris">🟠</span> IRIS</h2>
-          <div className="operator-column">
+        <div className="rounded-[10px] p-4 bg-[linear-gradient(180deg,rgba(255,122,26,0.06)_0%,rgba(255,122,26,0.03)_100%)] lg:border-r-2 border-iris/30">
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-4"><span className="text-iris">🟠</span> IRIS</h2>
+          <div className="space-y-4">
             {getOperatorsByFocus("IRIS").map((op, i) => renderOperatorCard(op, i, 'iris'))}
           </div>
         </div>
         
         {/* Situator Column */}
-        <div className="rounded-[10px] px-4 py-6 bg-[linear-gradient(180deg,rgba(30,151,240,0.06)_0%,rgba(30,151,240,0.03)_100%)] border-r-2 border-situator/30">
-          <h2 className="text-2xl font-bold text-white mb-4"><span className="text-situator">🔵</span> Situator</h2>
-          <div className="operator-column">
+        <div className="rounded-[10px] p-4 bg-[linear-gradient(180deg,rgba(30,151,240,0.06)_0%,rgba(30,151,240,0.03)_100%)] lg:border-r-2 border-situator/30">
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-4"><span className="text-situator">🔵</span> Situator</h2>
+          <div className="space-y-4">
             {getOperatorsByFocus("Situator").map((op, i) => renderOperatorCard(op, i, 'situator'))}
           </div>
         </div>
         
         {/* Apoio Column */}
-        <div className="rounded-[10px] px-4 py-6 bg-[linear-gradient(180deg,rgba(0,173,104,0.06)_0%,rgba(0,173,104,0.03)_100%)]">
-          <h2 className="text-2xl font-bold text-white mb-4"><span className="text-apoio">🟢</span> Apoio/Supervisão</h2>
-          <div className="operator-column">
+        <div className="rounded-[10px] p-4 bg-[linear-gradient(180deg,rgba(0,173,104,0.06)_0%,rgba(0,173,104,0.03)_100%)]">
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-4"><span className="text-apoio">🟢</span> Apoio/Supervisão</h2>
+          <div className="space-y-4">
             {getOperatorsByFocus("Apoio").map((op, i) => renderOperatorCard(op, i, 'apoio'))}
           </div>
         </div>
       </main>
 
-      <footer className="text-center italic text-[0.9rem] text-[#9C9C9C] py-3 border-t border-white/[.05] mt-auto flex-shrink-0">
+      <footer className="text-center italic text-xs md:text-[0.9rem] text-[#9C9C9C] py-3 border-t border-white/[.05] mt-auto flex-shrink-0">
         <p>🕊️ Central Patrimonium – Supervisão contínua para um ambiente seguro e equilibrado.</p>
         <p className="mt-1">Desenvolvido por: Danilo Saderi</p>
       </footer>

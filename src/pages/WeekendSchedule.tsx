@@ -113,52 +113,54 @@ const WeekendSchedule = () => {
   ], [currentSaturday, currentSunday, nextWkSaturday, nextWkSunday]);
 
   return (
-    <div className="min-h-screen bg-background p-8 pb-20">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <div className="min-h-screen bg-background p-4 md:p-8 pb-20">
+      <div className="max-w-7xl mx-auto space-y-8 md:space-y-12">
         <div>
-          <h1 className="text-4xl font-bold mb-2">Escala de Finais de Semana</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Escala de Finais de Semana</h1>
           <p className="text-muted-foreground mb-4">
             Controle e visualização completa da escala operacional do final de semana.
           </p>
         </div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <CardTitle>Gerenciamento de Escala Manual</CardTitle>
             <Button onClick={() => handleOpenDialog()}>
               <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Alocação
             </Button>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Operador</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Horário</TableHead>
-                  <TableHead>Foco Inicial</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(manualSchedule || []).map(op => (
-                  <TableRow key={op.id}>
-                    <TableCell>{op.operadores.nome}</TableCell>
-                    <TableCell>{format(new Date(op.data + 'T00:00:00'), "dd/MM (EEE)", { locale: ptBR })}</TableCell>
-                    <TableCell>{op.horario_inicio} - {op.horario_fim}</TableCell>
-                    <TableCell>{op.foco}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="icon" onClick={() => handleOpenDialog(op)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="destructive" size="icon" onClick={() => deleteAllocationMutation.mutate(op.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Operador</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Horário</TableHead>
+                    <TableHead>Foco Inicial</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {(manualSchedule || []).map(op => (
+                    <TableRow key={op.id}>
+                      <TableCell className="whitespace-nowrap">{op.operadores.nome}</TableCell>
+                      <TableCell className="whitespace-nowrap">{format(new Date(op.data + 'T00:00:00'), "dd/MM (EEE)", { locale: ptBR })}</TableCell>
+                      <TableCell className="whitespace-nowrap">{op.horario_inicio} - {op.horario_fim}</TableCell>
+                      <TableCell>{op.foco}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button variant="outline" size="icon" onClick={() => handleOpenDialog(op)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="destructive" size="icon" onClick={() => deleteAllocationMutation.mutate(op.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

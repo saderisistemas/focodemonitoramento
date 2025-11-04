@@ -99,22 +99,4 @@
     animation: fade-in 0.5s ease-out forwards;
     opacity: 0;
   }
-
-  /* Responsive Grid for TV Panel */
-  .tv-panel-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 1.8rem;
-    align-items: start;
-    justify-content: center;
-    width: 100%;
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
-
-  /* Column container with scroll */
-  .operator-column {
-    @apply w-full space-y-4 overflow-y-auto pr-2;
-    max-height: calc(100vh - 280px); /* Adjust based on header/footer height */
-  }
 }
