@@ -246,24 +246,24 @@ const TVPanel = () => {
     return (
       <div
         key={operator.id}
-        className={`relative bg-[#0d0d12]/80 backdrop-blur-md rounded-xl border border-white/5 p-4 md:p-5 w-full flex flex-col min-h-[110px] shadow-lg overflow-hidden`}
+        className={`relative bg-[#0d0d12]/90 backdrop-blur-xl rounded-[1.25rem] border border-white/10 p-5 md:p-7 w-full flex flex-col min-h-[140px] md:min-h-[200px] shadow-2xl overflow-hidden`}
       >
-        <div className={`absolute top-0 left-0 w-full h-1 ${theme.bgGlow} -z-10`}></div>
-        <div className="flex justify-between items-center mb-2 md:mb-3 z-10">
-          <div className="flex items-center gap-2">
-            <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">{operator.nome}</h3>
+        <div className={`absolute top-0 left-0 w-full h-1.5 ${theme.bgGlow} -z-10`}></div>
+        <div className="flex justify-between items-center mb-3 md:mb-5 z-10">
+          <div className="flex items-center gap-3">
+            <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase">{operator.nome}</h3>
           </div>
-          <div className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full ${theme.dot} ${theme.glow} animate-pulse`} />
+          <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${theme.dot} ${theme.glow} animate-pulse`} />
         </div>
 
-        <div className="flex items-center gap-2 text-zinc-200 font-mono text-sm md:text-base font-bold mb-2 md:mb-3 bg-black/50 px-3 py-1 md:px-4 md:py-1.5 rounded-lg w-max border border-white/10 z-10 shadow-inner">
+        <div className="flex items-center gap-3 text-zinc-100 font-mono text-lg md:text-xl font-black mb-3 md:mb-5 bg-black/60 px-4 py-1.5 md:px-5 md:py-2.5 rounded-lg w-max border border-white/10 z-10 shadow-2xl">
           <span>{formatTimeForDisplay(operator.displayStartTime)}</span>
-          <span className="text-zinc-500">—</span>
+          <span className="text-zinc-600">—</span>
           <span>{formatTimeForDisplay(operator.displayEndTime)}</span>
         </div>
 
         {operator.currentObservation ? (
-          <div className="text-sm md:text-base font-semibold text-zinc-400 leading-tight mt-auto pt-2 border-t border-white/5 z-10 italic w-full">
+          <div className="text-base md:text-lg font-bold text-zinc-400 leading-tight mt-auto pt-3 border-t border-white/10 z-10 italic w-full">
             "{operator.currentObservation}"
           </div>
         ) : <div className="mt-auto z-10"></div>}
