@@ -25,10 +25,13 @@ const configSchema = z.object({
   turno_a_trabalha_em_dias: z.string(),
   lider_diurno_a_nome: z.string().min(1, "O nome é obrigatório."),
   lider_diurno_b_nome: z.string().min(1, "O nome é obrigatório."),
-  lider_noturno_nome: z.string().min(1, "O nome é obrigatório."),
+  lider_noturno_a_nome: z.string().min(1, "O nome é obrigatório."),
+  lider_noturno_b_nome: z.string().min(1, "O nome é obrigatório."),
+  nome_gestor: z.string().optional(),
 });
 
 type ConfigFormData = z.infer<typeof configSchema>;
+
 
 const ScaleConfig = () => {
   const navigate = useNavigate();
@@ -39,7 +42,7 @@ const ScaleConfig = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("configuracao_escala")
-        .select("turno_a_trabalha_em_dias, lider_diurno_a_nome, lider_diurno_b_nome, lider_noturno_nome")
+        .select("turno_a_trabalha_em_dias, lider_diurno_a_nome, lider_diurno_b_nome, lider_noturno_a_nome, lider_noturno_b_nome, nome_gestor")
         .eq("id", 1)
         .single();
       // Se não houver erro, mas data for null (o que pode acontecer se a linha não existir), retorne um objeto padrão
@@ -48,7 +51,9 @@ const ScaleConfig = () => {
           turno_a_trabalha_em_dias: 'pares',
           lider_diurno_a_nome: '',
           lider_diurno_b_nome: '',
-          lider_noturno_nome: '',
+          lider_noturno_a_nome: '',
+          lider_noturno_b_nome: '',
+          nome_gestor: '',
         }
       }
       if (error && error.code !== 'PGRST116') { // PGRST116: 0 rows found
@@ -56,6 +61,7 @@ const ScaleConfig = () => {
       }
       return data;
     },
+
   });
 
   const form = useForm<ConfigFormData>({
@@ -64,9 +70,12 @@ const ScaleConfig = () => {
       turno_a_trabalha_em_dias: "pares",
       lider_diurno_a_nome: "",
       lider_diurno_b_nome: "",
-      lider_noturno_nome: "",
+      lider_noturno_a_nome: "",
+      lider_noturno_b_nome: "",
+      nome_gestor: "",
     },
   });
+
 
   useEffect(() => {
     if (config) {
@@ -74,10 +83,13 @@ const ScaleConfig = () => {
         turno_a_trabalha_em_dias: config.turno_a_trabalha_em_dias || 'pares',
         lider_diurno_a_nome: config.lider_diurno_a_nome || '',
         lider_diurno_b_nome: config.lider_diurno_b_nome || '',
-        lider_noturno_nome: config.lider_noturno_nome || '',
+        lider_noturno_a_nome: config.lider_noturno_a_nome || '',
+        lider_noturno_b_nome: config.lider_noturno_b_nome || '',
+        nome_gestor: config.nome_gestor || '',
       });
     }
   }, [config, form]);
+
 
   const mutation = useMutation({
     mutationFn: async (newConfig: ConfigFormData) => {
@@ -86,9 +98,12 @@ const ScaleConfig = () => {
         turno_a_trabalha_em_dias: newConfig.turno_a_trabalha_em_dias,
         lider_diurno_a_nome: newConfig.lider_diurno_a_nome,
         lider_diurno_b_nome: newConfig.lider_diurno_b_nome,
-        lider_noturno_nome: newConfig.lider_noturno_nome,
+        lider_noturno_a_nome: newConfig.lider_noturno_a_nome,
+        lider_noturno_b_nome: newConfig.lider_noturno_b_nome,
+        nome_gestor: newConfig.nome_gestor,
       };
       const { error } = await supabase
+
         .from("configuracao_escala")
         .upsert(payload, { onConflict: "id" });
       if (error) throw error;
@@ -163,7 +178,7 @@ const ScaleConfig = () => {
                   <CardTitle className="text-3xl">Líderes de Plantão</CardTitle>
                 </div>
                 <CardDescription>
-                  Defina os nomes dos líderes para cada turno que aparecerão no painel.
+                  Defina os nomes dos responsáveis pela central que aparecerão no painel.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -199,11 +214,33 @@ const ScaleConfig = () => {
                     />
                     <FormField
                       control={form.control}
-                      name="lider_noturno_nome"
+                      name="lider_noturno_a_nome"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Líder Noturno (19h-07h)</FormLabel>
+                          <FormLabel>Líder Noturno - Turno A (19h-07h)</FormLabel>
                           <FormControl><Input placeholder="Nome do líder" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lider_noturno_b_nome"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Líder Noturno - Turno B (19h-07h)</FormLabel>
+                          <FormControl><Input placeholder="Nome do líder" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="nome_gestor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Gestor da Central</FormLabel>
+                          <FormControl><Input placeholder="Nome do Gestor" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -212,6 +249,7 @@ const ScaleConfig = () => {
                 )}
               </CardContent>
             </Card>
+
 
             <Button type="submit" disabled={mutation.isPending} size="lg" className="w-full">
               {mutation.isPending ? "Salvando..." : "Salvar Configurações"}
